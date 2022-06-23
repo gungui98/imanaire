@@ -10,7 +10,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from .misc import ApplyNoise
-from imaginaire.third_party.upfirdn2d.upfirdn2d import Blur
+# from imaginaire.third_party.upfirdn2d.upfirdn2d import Blur
 
 
 class _BaseConvBlock(nn.Module):
@@ -55,33 +55,33 @@ class _BaseConvBlock(nn.Module):
             noise_layer = None
 
         # Convolutional layer.
-        if blur:
-            assert blur_kernel is not None
-            if stride == 2:
-                # Blur - Conv - Noise - Activate
-                p = (len(blur_kernel) - 2) + (kernel_size - 1)
-                pad0, pad1 = (p + 1) // 2, p // 2
-                padding = 0
-                blur_layer = Blur(
-                    blur_kernel, pad=(pad0, pad1), padding_mode=padding_mode
-                )
-                order = order.replace('C', 'BC')
-            elif stride == 0.5:
-                # Conv - Blur - Noise - Activate
-                padding = 0
-                p = (len(blur_kernel) - 2) - (kernel_size - 1)
-                pad0, pad1 = (p + 1) // 2 + 1, p // 2 + 1
-                blur_layer = Blur(
-                    blur_kernel, pad=(pad0, pad1), padding_mode=padding_mode
-                )
-                order = order.replace('C', 'CB')
-            elif stride == 1:
-                # No blur for now
-                blur_layer = nn.Identity()
-            else:
-                raise NotImplementedError
-        else:
-            blur_layer = nn.Identity()
+        # if blur:
+        #     assert blur_kernel is not None
+        #     if stride == 2:
+        #         # Blur - Conv - Noise - Activate
+        #         p = (len(blur_kernel) - 2) + (kernel_size - 1)
+        #         pad0, pad1 = (p + 1) // 2, p // 2
+        #         padding = 0
+        #         blur_layer = Blur(
+        #             blur_kernel, pad=(pad0, pad1), padding_mode=padding_mode
+        #         )
+        #         order = order.replace('C', 'BC')
+        #     elif stride == 0.5:
+        #         # Conv - Blur - Noise - Activate
+        #         padding = 0
+        #         p = (len(blur_kernel) - 2) - (kernel_size - 1)
+        #         pad0, pad1 = (p + 1) // 2 + 1, p // 2 + 1
+        #         blur_layer = Blur(
+        #             blur_kernel, pad=(pad0, pad1), padding_mode=padding_mode
+        #         )
+        #         order = order.replace('C', 'CB')
+        #     elif stride == 1:
+        #         # No blur for now
+        #         blur_layer = nn.Identity()
+        #     else:
+        #         raise NotImplementedError
+        # else:
+        blur_layer = nn.Identity()
 
         if weight_norm_params is None:
             weight_norm_params = SimpleNamespace()
