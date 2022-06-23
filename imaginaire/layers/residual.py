@@ -169,12 +169,15 @@ class _BaseResBlock(nn.Module):
             first_blur, second_blur = self.blur, False
             shortcut_blur = False
             shortcut_stride = 1
-            if self.blur:
-                # The shortcut branch uses blur_upsample + stride-1 conv
-                self.upsample = BlurUpsample()
-            else:
-                shortcut_stride = self.stride
-                self.upsample = nn.Upsample(scale_factor=2)
+            # if self.blur:
+            #     # The shortcut branch uses blur_upsample + stride-1 conv
+            #     self.upsample = BlurUpsample()
+            #     self.upsample = nn()
+            # else:
+            #     shortcut_stride = self.stride
+            #     self.upsample = nn.Upsample(scale_factor=2)
+            shortcut_stride = self.stride
+            self.upsample = nn.Upsample(scale_factor=2)
         else:
             first_stride = second_stride = 1
             first_blur = second_blur = False
