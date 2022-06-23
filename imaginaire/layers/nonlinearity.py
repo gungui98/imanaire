@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from imaginaire.third_party.bias_act.bias_act import FusedNonlinearity
+# from imaginaire.third_party.bias_act.bias_act import FusedNonlinearity
 
 
 class ScaledLeakyReLU(nn.Module):
@@ -39,7 +39,8 @@ def get_nonlinearity_layer(nonlinearity_type, inplace, **kwargs):
             the nonlinearity layer.
     """
     if nonlinearity_type.startswith('fused'):
-        nonlinearity = FusedNonlinearity(nonlinearity=nonlinearity_type[6:], **kwargs)
+        # nonlinearity = FusedNonlinearity(nonlinearity=nonlinearity_type[6:], **kwargs)
+        raise NotImplementedError('FusedNonlinearity is not implemented yet.')
     elif nonlinearity_type == 'relu':
         nonlinearity = nn.ReLU(inplace=inplace)
     elif nonlinearity_type == 'leakyrelu':
