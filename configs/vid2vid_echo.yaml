@@ -148,7 +148,7 @@ data:
     train:
         # Input LMDBs.
         roots:
-            - /home/jovyan/data/camus_cityscape_format
+            - /home/jovyan/data/camus_cityscape_format/train
         # Batch size per GPU.
         batch_size: 1
         initial_sequence_length: 4
@@ -161,7 +161,7 @@ data:
     val:
         # Input LMDBs.
         roots:
-            - /home/jovyan/data/camus_cityscape_format
+            - /home/jovyan/data/camus_cityscape_format/val
         # Batch size per GPU.
         batch_size: 1
         # If resize_h_w is not given, then it is assumed to be same as crop_h_w.
