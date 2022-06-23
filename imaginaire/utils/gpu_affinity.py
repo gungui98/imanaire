@@ -50,12 +50,13 @@ def set_affinity(gpu_id=None):
     Args:
         gpu_id (int): Which gpu device.
     """
-    if gpu_id is None:
-        gpu_id = int(os.getenv('LOCAL_RANK', 0))
-
-    dev = device(gpu_id)
-    os.sched_setaffinity(0, dev.getCpuAffinity())
-
-    # list of ints
-    # representing the logical cores this process is now affinitied with
-    return os.sched_getaffinity(0)
+    pass
+    # if gpu_id is None:
+    #     gpu_id = int(os.getenv('LOCAL_RANK', 0))
+    #
+    # # dev = device(gpu_id)
+    # # os.sched_setaffinity(0, dev.getCpuAffinity())
+    #
+    # # list of ints
+    # # representing the logical cores this process is now affinitied with
+    # return os.sched_getaffinity(0)

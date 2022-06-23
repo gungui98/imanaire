@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=2, help='Random seed.')
     parser.add_argument('--randomized_seed', action='store_true', help='Use a random seed between 0-10000.')
     parser.add_argument('--local_rank', type=int, default=os.getenv('LOCAL_RANK', 0))
-    parser.add_argument('--single_gpu', action='store_true')
+    parser.add_argument('--single_gpu', action='store_true', default=True)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--use_jit', action='store_true')
     parser.add_argument('--profile', action='store_true')
@@ -113,7 +113,7 @@ def main():
                    config=cfg,
                    name=os.path.basename(cfg.logdir),
                    resume="allow",
-                   settings=wandb.Settings(start_method="fork"),
+                   settings=wandb.Settings(),
                    mode=wandb_mode)
         wandb.config.update({'dataset': cfg.data.name})
         wandb.watch(trainer.net_G_module)
