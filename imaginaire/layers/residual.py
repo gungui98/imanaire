@@ -12,7 +12,7 @@ from torch.utils.checkpoint import checkpoint
 from .conv import (Conv1dBlock, Conv2dBlock, Conv3dBlock, HyperConv2dBlock,
                    LinearBlock, MultiOutConv2dBlock, PartialConv2dBlock,
                    PartialConv3dBlock, ModulatedConv2dBlock)
-from imaginaire.third_party.upfirdn2d.upfirdn2d import BlurUpsample
+# from imaginaire.third_party.upfirdn2d.upfirdn2d import BlurUpsample
 
 
 class _BaseResBlock(nn.Module):
