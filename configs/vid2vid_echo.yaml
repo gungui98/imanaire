@@ -1,14 +1,14 @@
 # How often do you want to log the training stats.
-logging_iter: 2
+logging_iter: 200
 # Number of training epochs.
-max_iter: 12
+max_iter: 12000
 # Number of epochs training single frame generator.
 single_frame_epoch: 0
 # How often to double the number of training frames in each clip.
 num_epochs_temporal_step: 40
 
 # How often do you want to save output images during training.
-image_save_iter: 2
+image_save_iter: 200
 
 # Trainer options.
 trainer:
