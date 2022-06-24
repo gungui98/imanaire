@@ -22,6 +22,7 @@ nvcc_args.append('-gencode')
 nvcc_args.append('arch=compute_75,code=sm_75')
 if cuda_version is not None:
     if cuda_version >= '11.0':
+        print("CUDA_VERSION >= 11.0")
         nvcc_args.append('-gencode')
         nvcc_args.append('arch=compute_80,code=sm_80')
 nvcc_args.append('-Xcompiler')
