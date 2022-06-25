@@ -4,6 +4,7 @@
 # To view a copy of this license, check out LICENSE.md
 import os
 
+import wandb
 from torch.cuda.amp import autocast
 import imageio
 import numpy as np
@@ -909,5 +910,7 @@ class Trainer(BaseTrainer):
 
                 imageio.mimwrite(os.path.splitext(path)[0] + '.mp4',
                                  output_images, fps=2, macro_block_size=None)
-
+                # log wandb video
+                wandb.log({"video": wandb.Video(
+                    os.path.splitext(path)[0] + '.mp4')}, step=self.current_iteration)
         self.net_G.float()
