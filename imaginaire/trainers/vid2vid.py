@@ -4,6 +4,7 @@
 # To view a copy of this license, check out LICENSE.md
 import os
 
+import cv2
 import wandb
 from torch.cuda.amp import autocast
 import imageio
@@ -905,12 +906,21 @@ class Trainer(BaseTrainer):
             # Gather all outputs for dumping into video.
             if self.sequence_length > 1:
                 output_images = []
-                for item in all_info['outputs']:
-                    output_images.append(tensor2im(item['fake_images'])[0])
+                input_images = []
+                label_images = []
+                merged_images = []
+                for i in range(self.sequence_length):
+                    output_images.append(tensor2im(all_info['outputs'][i]['fake_images'])[0])
+                    input_images.append(tensor2im(all_info['inputs'][i]['image'])[0])
+                    label_images.append(self.visualize_label(labels["seg_maps"][:, i])[0])
+                    merged_images.append(cv2.addWeighted(output_images[-1], 0.8, label_images[-1], 0.2, 0))
+                stacked_images = [np.hstack([input_images[i], label_images[i],
+                                             output_images[i], merged_images[i]
+                                             ]) for i in range(self.sequence_length)]
 
                 imageio.mimwrite(os.path.splitext(path)[0] + '.mp4',
-                                 output_images, fps=2, macro_block_size=None)
+                                 stacked_images, fps=2, macro_block_size=None)
                 # log wandb video
-                wandb.log({"video": wandb.Video(
-                    os.path.splitext(path)[0] + '.mp4')}, step=self.current_iteration)
+                wandb.log({"train vislize": wandb.Video(
+                    os.path.splitext(path)[0] + '.mp4', fps=2, format="mp4")}, step=self.current_iteration)
         self.net_G.float()
