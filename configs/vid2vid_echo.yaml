@@ -1,7 +1,7 @@
 # How often do you want to log the training stats.
 logging_iter: 200
 # Number of training epochs.
-max_iter: 12000
+max_iter: 120000
 # Number of epochs training single frame generator.
 single_frame_epoch: 0
 # How often to double the number of training frames in each clip.
@@ -154,7 +154,7 @@ data:
             - /home/jovyan/data/camus_cityscape_format/train
         # Batch size per GPU.
         batch_size: 1
-        initial_sequence_length: 4
+        initial_sequence_length: 10
         # Data augmentations to be performed in given order.
         augmentations:
             resize_h_w: 512, 512
