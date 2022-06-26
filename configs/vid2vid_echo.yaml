@@ -12,9 +12,9 @@ image_save_iter: 200
 
 # Trainer options.
 trainer:
-    type: imaginaire.trainers.vid2vid
+    type: imaginaire.trainers.fs_vid2vid
     amp_config:
-        enabled: True
+        enabled: False
     model_average_config:
         enabled: True
         beta: 0.999
@@ -43,28 +43,29 @@ trainer:
 # optimization option
 gen_opt:
     type: adam
-    lr: 0.0001
-    adam_beta1: 0.
+    lr: 0.0002
+    adam_beta1: 0.5
     adam_beta2: 0.999
     lr_policy:
         iteration_mode: False
         type: step
-        step_size: 20
-        gamma: 0.9
+        step_size: 60
+        gamma: 0.1
 dis_opt:
     type: adam
-    lr: 0.0004
-    adam_beta1: 0.
+    lr: 0.0002
+    adam_beta1: 0.5
     adam_beta2: 0.999
     lr_policy:
         iteration_mode: False
         type: step
-        step_size: 20
-        gamma: 0.9
+        step_size: 60
+        gamma: 0.1
+
 
 # Model options.
 gen:
-    type: imaginaire.generators.vid2vid
+    type: imaginaire.generators.fs_vid2vid
     num_layers: 7
     num_downsamples_img: 4
     num_filters: 8
