@@ -4,10 +4,12 @@
 # To view a copy of this license, check out LICENSE.md
 from functools import partial
 
+import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 
 from imaginaire.generators.fs_vid2vid import LabelEmbedder
 from imaginaire.layers import Conv2dBlock, LinearBlock, Res2dBlock
@@ -16,6 +18,7 @@ from imaginaire.model_utils.fs_vid2vid import (extract_valid_pose_labels,
 from imaginaire.utils.data import (get_paired_input_image_channel_number,
                                    get_paired_input_label_channel_number)
 from imaginaire.utils.init_weight import weights_init
+from imaginaire.utils.speckle import create_mapping
 
 
 class BaseNetwork(nn.Module):
@@ -151,6 +154,7 @@ class Generator(BaseNetwork):
         self.downsample = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.upsample = partial(F.interpolate, scale_factor=2)
         self.init_temporal_network()
+        self.x_map, self.y_map = create_mapping(600, 400)
 
     def forward(self, data):
         r"""vid2vid generator forward.
@@ -220,7 +224,7 @@ class Generator(BaseNetwork):
         num_frames_G = self.num_frames_G
         # Whether to warp the previous frame or not.
         warp_prev = self.temporal_initialized and not is_first_frame and \
-            label_prev.shape[1] == num_frames_G - 1
+                    label_prev.shape[1] == num_frames_G - 1
         if warp_prev:
             # Estimate flow & mask.
             label_concat = torch.cat([label_prev.view(bs, -1, h, w),
@@ -263,6 +267,29 @@ class Generator(BaseNetwork):
         if warp_prev and not self.spade_combine:
             img_raw = img_final
             img_final = img_final * mask + img_warp * (1 - mask)
+
+        # add speckle noise to final image
+        noisy_images = []
+        batch_size = img_final.shape[0]
+        for i in range(batch_size):
+            image = np.random.randint(0, 256, (256, 256), dtype=np.uint8)
+            image = cv2.resize(image, (600, 400))
+            # blur the image
+            image = cv2.blur(image, (15, 1))
+
+            # resize
+            image = cv2.remap(image, self.x_map, self.y_map, cv2.INTER_LINEAR)
+            image = image[:, 18:-18]
+            image = cv2.resize(image, (512, 512))
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+            # convert to tensor
+            image = torchvision.transforms.ToTensor()(image)
+            image = image.unsqueeze(0)
+            image = image.to(img_final.device)
+            noisy_images.append(image)
+        noisy_images = torch.cat(noisy_images, dim=0)
+        img_final = 0.8*img_final + 0.2*noisy_images
 
         output = dict()
         output['fake_images'] = img_final
