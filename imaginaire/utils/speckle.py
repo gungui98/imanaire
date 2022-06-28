@@ -1,18 +1,12 @@
-import numpy as np
-import cv2
-
-import glob
-import os
 
 import cv2
 import numpy as np
-import SimpleITK as itk
 
-
-def read_mhd(img_path):
-    image_itk = itk.ReadImage(img_path)
-    image = itk.GetArrayFromImage(image_itk)
-    return np.squeeze(image)
+#
+# def read_mhd(img_path):
+#     image_itk = itk.ReadImage(img_path)
+#     image = itk.GetArrayFromImage(image_itk)
+#     return np.squeeze(image)
 
 
 def create_mapping(rf_width, rf_height):
