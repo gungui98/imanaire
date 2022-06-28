@@ -921,6 +921,6 @@ class Trainer(BaseTrainer):
                 imageio.mimwrite(os.path.splitext(path)[0] + '.mp4',
                                  stacked_images, fps=2, macro_block_size=None)
                 # log wandb video
-                wandb.log({"train vislize": wandb.Video(
+                wandb.log({"train visualize": wandb.Video(
                     os.path.splitext(path)[0] + '.mp4', fps=2, format="mp4")}, step=self.current_iteration)
         self.net_G.float()

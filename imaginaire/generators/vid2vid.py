@@ -21,6 +21,7 @@ from imaginaire.utils.init_weight import weights_init
 from imaginaire.utils.speckle import create_mapping
 
 
+
 class BaseNetwork(nn.Module):
     r"""vid2vid generator."""
 
@@ -272,22 +273,30 @@ class Generator(BaseNetwork):
         noisy_images = []
         batch_size = img_final.shape[0]
         for i in range(batch_size):
-            image = np.random.randint(0, 256, (256, 256), dtype=np.uint8)
+            image = np.random.randint(0, 256, (400, 400), dtype=np.uint8)
             image = cv2.resize(image, (600, 400))
             # blur the image
             image = cv2.blur(image, (15, 1))
-
             # resize
             image = cv2.remap(image, self.x_map, self.y_map, cv2.INTER_LINEAR)
-            image = image[:, 18:-18]
+            image = image[:, 55:-55]
             image = cv2.resize(image, (512, 512))
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            # real_image = data["image"]
+            # from imaginaire.utils.visualization import tensor2im
+            #
+            # real_image = tensor2im(real_image)[0]
+            # real_image = cv2.resize(real_image, (512, 512))
+            # add_weighted_image = cv2.addWeighted(image, 0.5, real_image, 0.5, 0)
+            # cv2.imshow("add_weighted_image", add_weighted_image)
+            # cv2.waitKey(0)
 
             # convert to tensor
             image = torchvision.transforms.ToTensor()(image)
             image = image.unsqueeze(0)
             image = image.to(img_final.device)
             noisy_images.append(image)
+
         noisy_images = torch.cat(noisy_images, dim=0)
         img_final = 0.8*img_final + 0.2*noisy_images
 
