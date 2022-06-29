@@ -297,11 +297,12 @@ class Generator(BaseNetwork):
         noisy_background = noisy_background.to(img_final.device)
         combine = torch.cat([img_final, noisy_background], dim=1)
         weight_map = torch.sigmoid(self.combine(combine))
+        # force the weight map to be 0.2 to 0.8
+        weight_map = (weight_map - 0.2) / (0.8 - 0.2)
         img_final = img_final * weight_map + noisy_background * (1 - weight_map)
 
         output = dict()
-        output['fake_images'] = img_final
-        output['fake_flow_maps'] = flow
+        output['fake_images'] = img_final; output['fake_flow_maps'] = flow
         output['fake_occlusion_masks'] = mask
         output['fake_raw_images'] = img_raw
         output['warped_images'] = img_warp
