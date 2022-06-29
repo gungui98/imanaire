@@ -122,6 +122,9 @@ class Trainer(BaseTrainer):
         if getattr(loss_weight, 'L1', 0) > 0:
             self._assign_criteria('L1', torch.nn.L1Loss(), loss_weight.L1)
 
+        if getattr(loss_weight, 'background_noise', 0) > 0:
+            self._assign_criteria('background_noise', torch.nn.L1Loss(), loss_weight.background_noise)
+
         # Whether to add an additional discriminator for specific regions.
         self.add_dis_cfg = getattr(self.cfg.dis, 'additional_discriminators',
                                    None)
@@ -486,6 +489,10 @@ class Trainer(BaseTrainer):
                 if getattr(self.cfg.trainer.loss_weight, 'L1', 0) > 0:
                     self.gen_losses['L1'] = self.criteria['L1'](
                         net_G_output['fake_images'], data_t['image'])
+
+                if getattr(self.cfg.trainer.loss_weight, 'background_noise', 0) > 0:
+                    self.gen_losses['background_noise'] = self.criteria['background_noise'](
+                        net_G_output['fake_images'], net_G_output['noise_background'])
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
                 if 'raw' in net_D_output:

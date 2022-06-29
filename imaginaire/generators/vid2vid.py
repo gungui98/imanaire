@@ -306,6 +306,8 @@ class Generator(BaseNetwork):
         output['fake_occlusion_masks'] = mask
         output['fake_raw_images'] = img_raw
         output['warped_images'] = img_warp
+        output['fake_weight_maps'] = weight_map
+        output['noise_background'] = noisy_background
         return output
 
     def one_up_conv_layer(self, x, encoded_label, i):
