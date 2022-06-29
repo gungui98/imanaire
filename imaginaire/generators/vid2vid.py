@@ -3,6 +3,7 @@
 # This work is made available under the Nvidia Source Code License-NC.
 # To view a copy of this license, check out LICENSE.md
 from functools import partial
+import random
 
 import cv2
 import numpy as np
@@ -62,14 +63,6 @@ class Generator(BaseNetwork):
         self.max_num_filters = getattr(gen_cfg, 'max_num_filters', 1024)
         self.kernel_size = kernel_size = getattr(gen_cfg, 'kernel_size', 3)
         padding = kernel_size // 2
-
-        # For pose dataset.
-        self.is_pose_data = hasattr(data_cfg, 'for_pose_dataset')
-        if self.is_pose_data:
-            pose_cfg = data_cfg.for_pose_dataset
-            self.pose_type = getattr(pose_cfg, 'pose_type', 'both')
-            self.remove_face_labels = getattr(pose_cfg, 'remove_face_labels',
-                                              False)
 
         # Input data params.
         num_input_channels = get_paired_input_label_channel_number(data_cfg)
@@ -145,17 +138,57 @@ class Generator(BaseNetwork):
 
         num_filters = min(self.max_num_filters,
                           num_filters * (2 ** (self.num_layers + 1)))
-        if self.use_segmap_as_input:
-            self.fc = Conv2dBlock(num_input_channels, num_filters,
+        self.fc = Conv2dBlock(num_input_channels, num_filters,
                                   kernel_size=3, padding=1)
-        else:
-            self.fc = LinearBlock(self.z_dim, num_filters * self.sh * self.sw)
 
         # Misc.
         self.downsample = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.upsample = partial(F.interpolate, scale_factor=2)
+        self.combine = Conv2dBlock(4, 3, kernel_size=1, stride=1)
+        self.noisy_backgrounds = []
         self.init_temporal_network()
-        self.x_map, self.y_map = create_mapping(600, 400)
+        self._init_noisy_background()
+
+    def _init_noisy_background(self, ):
+        r"""
+        Initialize the noisy background.
+        """
+        x_map, y_map = create_mapping(600, 400)
+        noisy_images = []
+        for i in range(100):
+            image = np.random.randint(0, 256, (400, 400), dtype=np.uint8)
+            image = cv2.resize(image, (600, 400))
+            # blur the image
+            image = cv2.blur(image, (15, 1))
+            # resize
+            image = cv2.remap(image, x_map, y_map, cv2.INTER_LINEAR)
+            image = image[:, 55:-55]
+            image = cv2.resize(image, (512, 512))
+            # image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            # real_image = data["image"]
+            # from imaginaire.utils.visualization import tensor2im
+            #
+            # real_image = tensor2im(real_image)[0]
+            # real_image = cv2.resize(real_image, (512, 512))
+            # add_weighted_image = cv2.addWeighted(image, 0.5, real_image, 0.5, 0)
+            # cv2.imshow("add_weighted_image", add_weighted_image)
+            # cv2.waitKey(0)
+
+            # convert to tensor
+            image = torchvision.transforms.ToTensor()(image)
+            image = image.unsqueeze(0)
+            noisy_images.append(image)
+        self.noisy_backgrounds = noisy_images
+
+    def get_noisy_background(self, batch_size):
+        r"""
+        Get the noisy background.
+        """
+
+        noisy_backgrounds = []
+        for i in range(batch_size):
+            noisy_backgrounds.append(random.choice(self.noisy_backgrounds))
+        return torch.cat(noisy_backgrounds, dim=0)
 
     def forward(self, data):
         r"""vid2vid generator forward.
@@ -168,12 +201,7 @@ class Generator(BaseNetwork):
         label = data['label']
         label_prev, img_prev = data['prev_labels'], data['prev_images']
         is_first_frame = img_prev is None
-        z = getattr(data, 'z', None)
         bs, _, h, w = label.size()
-
-        if self.is_pose_data:
-            label, label_prev = extract_valid_pose_labels(
-                [label, label_prev], self.pose_type, self.remove_face_labels)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -182,14 +210,8 @@ class Generator(BaseNetwork):
         # first frame) or encoded previous frame (for subsequent frames).
         if is_first_frame:
             # First frame in the sequence, start from scratch.
-            if self.use_segmap_as_input:
-                x_img = F.interpolate(label, size=(self.sh, self.sw))
-                x_img = self.fc(x_img)
-            else:
-                if z is None:
-                    z = torch.randn(bs, self.z_dim, dtype=label.dtype,
-                                    device=label.get_device()).fill_(0)
-                x_img = self.fc(z).view(bs, -1, self.sh, self.sw)
+            x_img = F.interpolate(label, size=(self.sh, self.sw))
+            x_img = self.fc(x_img)
 
             # Upsampling layers.
             for i in range(self.num_layers, self.num_downsamples_img, -1):
@@ -270,35 +292,12 @@ class Generator(BaseNetwork):
             img_final = img_final * mask + img_warp * (1 - mask)
 
         # add speckle noise to final image
-        noisy_images = []
-        batch_size = img_final.shape[0]
-        for i in range(batch_size):
-            image = np.random.randint(0, 256, (400, 400), dtype=np.uint8)
-            image = cv2.resize(image, (600, 400))
-            # blur the image
-            image = cv2.blur(image, (15, 1))
-            # resize
-            image = cv2.remap(image, self.x_map, self.y_map, cv2.INTER_LINEAR)
-            image = image[:, 55:-55]
-            image = cv2.resize(image, (512, 512))
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            # real_image = data["image"]
-            # from imaginaire.utils.visualization import tensor2im
-            #
-            # real_image = tensor2im(real_image)[0]
-            # real_image = cv2.resize(real_image, (512, 512))
-            # add_weighted_image = cv2.addWeighted(image, 0.5, real_image, 0.5, 0)
-            # cv2.imshow("add_weighted_image", add_weighted_image)
-            # cv2.waitKey(0)
 
-            # convert to tensor
-            image = torchvision.transforms.ToTensor()(image)
-            image = image.unsqueeze(0)
-            image = image.to(img_final.device)
-            noisy_images.append(image)
-
-        noisy_images = torch.cat(noisy_images, dim=0)
-        img_final = 0.8*img_final + 0.2*noisy_images
+        noisy_background = self.get_noisy_background(img_final.shape[0])
+        noisy_background = noisy_background.to(img_final.device)
+        combine = torch.cat([img_final, noisy_background], dim=1)
+        weight_map = torch.sigmoid(self.combine(combine))
+        img_final = img_final * weight_map + noisy_background * (1 - weight_map)
 
         output = dict()
         output['fake_images'] = img_final

@@ -29,5 +29,5 @@ if __name__ == '__main__':
             cv2.imshow('image', frame)
             cv2.imshow('noise', noise_frame)
             cv2.imshow('add_warp', add_noise)
-            if cv2.waitKey(100) & 0xFF == ord('q'):
+            if cv2.waitKey(0) & 0xFF == ord('q'):
                 break
