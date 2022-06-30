@@ -67,7 +67,7 @@ dis_opt:
 gen:
     type: imaginaire.generators.vid2vid
     num_layers: 7
-    num_downsamples_img: 4
+    num_downsamples_img: 3
     num_filters: 8
     max_num_filters: 128
     kernel_size: 3
@@ -82,7 +82,7 @@ gen:
     flow:
         num_filters: 8
         max_num_filters: 128
-        num_downsamples: 5
+        num_downsamples: 4
         num_res_blocks: 6
         activation_norm_type: instance
         weight_norm_type: spectral
@@ -93,7 +93,7 @@ gen:
             embed:
                 arch: unet
                 num_filters: 8
-                num_downsamples: 5
+                num_downsamples: 4
                 kernel_size: 3
                 weight_norm_type: spectral
     embed:
