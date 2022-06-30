@@ -164,7 +164,7 @@ class Generator(BaseNetwork):
             image = cv2.remap(image, x_map, y_map, cv2.INTER_LINEAR)
             image = image[:, 55:-55]
             image = cv2.resize(image, (512, 512))
-            # image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             # real_image = data["image"]
             # from imaginaire.utils.visualization import tensor2im
             #
