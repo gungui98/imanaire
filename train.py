@@ -41,10 +41,16 @@ def parse_args():
     parser.add_argument('--wandb', action='store_true')
     parser.add_argument('--wandb_name', default='default', type=str)
     parser.add_argument('--wandb_id', type=str)
+    parser.add_argument('--wandb_exp_name', type=str, default=get_git_commit_message(), help='Name of the experiment.')
     parser.add_argument('--resume', type=int)
     parser.add_argument('--num_workers', type=int)
     args = parser.parse_args()
     return args
+
+
+def get_git_commit_message():
+    commit_message = os.popen('git log -1 --pretty=%B').read()
+    return commit_message.strip()
 
 
 def main():
@@ -111,7 +117,7 @@ def main():
         wandb.init(id=wandb_id,
                    project=args.wandb_name,
                    config=cfg,
-                   name=os.path.basename(cfg.logdir),
+                   name=args.wandb_exp_name + "_" + os.path.basename(cfg.logdir),
                    resume="allow",
                    settings=wandb.Settings(),
                    mode=wandb_mode)
