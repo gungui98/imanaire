@@ -301,6 +301,13 @@ class Generator(BaseNetwork):
         weight_map = (weight_map - 0.2) / (0.8 - 0.2)
         img_final = img_final * weight_map + noisy_background * (1 - weight_map)
 
+        # get tensor where labels are 0 or 1
+        label_background = label[:, :1] + label[:, 1:2]
+        # blur the label background
+        # label_background = torchvision.transforms.GaussianBlur(kernel_size=3)(label_background)
+
+
+
         output = dict()
         output['fake_images'] = img_final; output['fake_flow_maps'] = flow
         output['fake_occlusion_masks'] = mask
@@ -308,6 +315,7 @@ class Generator(BaseNetwork):
         output['warped_images'] = img_warp
         output['fake_weight_maps'] = weight_map
         output['noise_background'] = noisy_background
+        output['label_background'] = label_background
         return output
 
     def one_up_conv_layer(self, x, encoded_label, i):

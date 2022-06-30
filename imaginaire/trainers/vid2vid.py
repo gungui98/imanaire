@@ -492,7 +492,7 @@ class Trainer(BaseTrainer):
 
                 if getattr(self.cfg.trainer.loss_weight, 'background_noise', 0) > 0:
                     self.gen_losses['background_noise'] = self.criteria['background_noise'](
-                        net_G_output['fake_images'], net_G_output['noise_background'])
+                        net_G_output['fake_weight_maps'], net_G_output['label_background'])
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
                 if 'raw' in net_D_output:
@@ -916,13 +916,15 @@ class Trainer(BaseTrainer):
                 input_images = []
                 label_images = []
                 merged_images = []
+                weight_maps = []
                 for i in range(self.sequence_length):
                     output_images.append(tensor2im(all_info['outputs'][i]['fake_images'])[0])
                     input_images.append(tensor2im(all_info['inputs'][i]['image'])[0])
                     label_images.append(self.visualize_label(labels["seg_maps"][:, i])[0])
+                    weight_maps.append(tensor2im(all_info['outputs'][i]['fake_weight_maps'])[0])
                     merged_images.append(cv2.addWeighted(output_images[-1], 0.8, label_images[-1], 0.2, 0))
                 stacked_images = [np.hstack([input_images[i], label_images[i],
-                                             output_images[i], merged_images[i]
+                                             output_images[i], merged_images[i], weight_maps[i]
                                              ]) for i in range(self.sequence_length)]
 
                 imageio.mimwrite(os.path.splitext(path)[0] + '.mp4',

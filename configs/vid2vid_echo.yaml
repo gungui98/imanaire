@@ -30,11 +30,11 @@ trainer:
         weights: [0.03125, 0.0625, 0.125, 0.25, 1.0]
     loss_weight:
         gan: 1.0
-        feature_matching: 0.0
+        feature_matching: 10.0
         temporal_gan: 0.0
-        perceptual: 0.0
-        flow: 0.0
-        background_noise: 1.0
+        perceptual: 10.0
+        flow: 10.0
+        background_noise: 10.0
     init:
         type: xavier
         gain: 0.02
