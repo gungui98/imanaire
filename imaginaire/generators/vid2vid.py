@@ -144,7 +144,7 @@ class Generator(BaseNetwork):
         # Misc.
         self.downsample = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.upsample = partial(F.interpolate, scale_factor=2)
-        self.combine = Conv2dBlock(4, 3, kernel_size=1, stride=1)
+        self.combine = Conv2dBlock(6, 3, kernel_size=1, stride=1)
         self.noisy_backgrounds = []
         self.init_temporal_network()
         self._init_noisy_background()
