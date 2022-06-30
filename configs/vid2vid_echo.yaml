@@ -33,7 +33,7 @@ trainer:
         feature_matching: 10.0
         temporal_gan: 0.0
         perceptual: 10.0
-        flow: 10.0
+        flow: 0.0
         background_noise: 1.0
     init:
         type: xavier
