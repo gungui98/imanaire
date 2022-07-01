@@ -53,36 +53,11 @@ def show_phase(name, img):
     #plot(np.log(mag))
     cv2.imshow(f'{name} pha', pha)
 
-#
-# if __name__ == '__main__':
-#     mask_imgs = glob.glob('./new_data/trainA/*/*')
-#     real_imgs = glob.glob('./new_data/trainB/*/*')
-#
-#     for i in range(10):
-#         img = get_random(real_imgs)
-#         show_phase(str(i), img)
-#
-#     mask_img = get_random(mask_imgs)
-#     show_phase('mask', mask_img)
-#     cv2.waitKey(0)
-#     exit(0)
-#     print(len(mask_imgs))
-#     print(len(real_imgs))
-#
-#     mask_img = get_random(mask_imgs)
-#     plot(mask_img)
-#     mask_img = to_pseudo(mask_img)
-#     real_img = get_random(real_imgs)
-#
-#
-#     simulate(mask_img, real_img)
-#     cv2.waitKey(0)
 
 if __name__ == '__main__':
     # read mp4 file
     video_name = "demo.mp4"
     cap = cv2.VideoCapture(video_name)
-    noise_images = [gen_noise_image(512, 512) for _ in range(10)]
     video_frames = []
     while True:
         ret, frame = cap.read()
@@ -90,6 +65,9 @@ if __name__ == '__main__':
             break
         video_frames.append(frame)
     cap.release()
+    noise_images = [gen_noise_image(512, 512) for _ in range(len(video_frames))]
+    for i in range(len(video_frames)):
+        cv2.imwrite("./noise/{}.png".format(i), noise_images[i])
     while True:
         for i in range(len(video_frames)):
             # warp the image
@@ -100,7 +78,10 @@ if __name__ == '__main__':
             label_frame = frame[:, w//4:w//4*3]
             noise_frame = noise_images[np.random.randint(0, len(noise_images))]
             noise_frame = cv2.cvtColor(noise_frame, cv2.COLOR_GRAY2BGR)
+            # gausian filter the image
+            predicted_frame = cv2.GaussianBlur(predicted_frame, (5, 5), 0)
             add_noise = cv2.addWeighted(predicted_frame, 0.8, noise_frame, 0.2, 0)
+
             # simulate(noise_frame, predicted_frame)
             # cv2.waitKey(0)
 
@@ -108,5 +89,5 @@ if __name__ == '__main__':
             cv2.imshow('noise', noise_frame)
             cv2.imshow('add_warp', add_noise)
             cv2.imshow('label_frame', label_frame)
-            if cv2.waitKey(0) & 0xFF == ord('q'):
+            if cv2.waitKey(50) & 0xFF == ord('q'):
                 break

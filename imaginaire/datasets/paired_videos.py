@@ -37,6 +37,7 @@ class Dataset(BaseDataset):
         super(Dataset, self).__init__(cfg, is_inference, is_test)
         self.set_sequence_length(self.sequence_length)
         self.is_video_dataset = True
+        self.cache = []
 
     def get_label_lengths(self):
         r"""Get num channels of all labels to be concated.
@@ -244,7 +245,11 @@ class Dataset(BaseDataset):
             lmdbs[data_type] = self.lmdbs[data_type][lmdb_idx]
 
         # Load all data for this index.
-        data = self.load_from_dataset(keys, lmdbs)
+        if index > len(self.cache):
+            data = self.load_from_dataset(keys, lmdbs)
+            self.cache.append(data)
+        else:
+            data = self.cache[index]
 
         # Apply ops pre augmentation.
         data = self.apply_ops(data, self.pre_aug_ops)
