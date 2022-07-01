@@ -34,7 +34,7 @@ trainer:
         temporal_gan: 0.0
         perceptual: 10.0
         flow: 10.0
-        background_noise: 10.0
+        background_noise: 2.0
     init:
         type: xavier
         gain: 0.02
