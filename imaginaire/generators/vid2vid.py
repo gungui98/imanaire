@@ -302,6 +302,8 @@ class Generator(BaseNetwork):
 
         # get tensor where labels are 0 or 1
         label_background = label[:, :1] + label[:, 1:2]
+        # duplicate to 3 channels
+        label_background = label_background.repeat(1, 3, 1, 1)
         # blur the label background
         # label_background = torchvision.transforms.GaussianBlur(kernel_size=3)(label_background)
 
