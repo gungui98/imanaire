@@ -39,9 +39,6 @@ class Dataset(BaseDataset):
         self.is_video_dataset = True
         self.cache = []
         # iterate over all sequences and create mapping
-        for i in self:
-            pass
-        print('Load complete.')
 
     def get_label_lengths(self):
         r"""Get num channels of all labels to be concated.

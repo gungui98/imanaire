@@ -30,6 +30,12 @@ def _get_train_and_val_dataset_objects(cfg):
     val_dataset = dataset_module.Dataset(cfg, is_inference=True)
     print('Train dataset length:', len(train_dataset))
     print('Val dataset length:', len(val_dataset))
+    for i in range(len(train_dataset)):
+        pass
+
+    for i in range(len(val_dataset)):
+        pass
+    print("done cache dataset")
     return train_dataset, val_dataset
 
 
