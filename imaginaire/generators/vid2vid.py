@@ -297,7 +297,7 @@ class Generator(BaseNetwork):
         combine = torch.cat([img_final, noisy_background], dim=1)
         weight_map = torch.sigmoid(self.combine(combine))
         # force the weight map to be 0.2 to 0.8u
-        # weight_map = (weight_map - 0.2) / (0.8 - 0.2)
+        weight_map = (weight_map - 0.2) / (0.8 - 0.2)
         img_final = noisy_background * weight_map + img_final * (1 - weight_map)
 
         # get tensor where labels are 0 or 1
