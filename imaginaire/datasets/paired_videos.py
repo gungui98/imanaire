@@ -246,11 +246,7 @@ class Dataset(BaseDataset):
             lmdbs[data_type] = self.lmdbs[data_type][lmdb_idx]
 
         # Load all data for this index.
-        if index > len(self.cache):
-            data = self.load_from_dataset(keys, lmdbs)
-            self.cache.append(data)
-        else:
-            data = self.cache[index]
+        data = self.load_from_dataset(keys, lmdbs)
 
         # Apply ops pre augmentation.
         data = self.apply_ops(data, self.pre_aug_ops)
