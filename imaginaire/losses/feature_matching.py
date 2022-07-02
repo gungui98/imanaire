@@ -16,7 +16,7 @@ class FeatureMatchingLoss(nn.Module):
         else:
             raise ValueError('Criterion %s is not recognized' % criterion)
 
-    def forward(self, fake_features, real_features):
+    def forward(self, fake_features, real_features, mask=None):
         r"""Return the target vector for the binary cross entropy loss
         computation.
 

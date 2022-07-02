@@ -37,7 +37,6 @@ class Dataset(BaseDataset):
         super(Dataset, self).__init__(cfg, is_inference, is_test)
         self.set_sequence_length(self.sequence_length)
         self.is_video_dataset = True
-        self.cache = []
         # iterate over all sequences and create mapping
 
     def get_label_lengths(self):
