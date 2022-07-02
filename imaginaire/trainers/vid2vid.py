@@ -479,6 +479,7 @@ class Trainer(BaseTrainer):
                 # Individual frame GAN loss and feature matching loss.
                 self.gen_losses['GAN'], self.gen_losses['FeatureMatching'] = \
                     self.compute_gan_losses(net_D_output['indv'],
+                                            mask=1 - net_G_output["label_background"],
                                             dis_update=False)
 
                 # Perceptual loss.
@@ -662,7 +663,7 @@ class Trainer(BaseTrainer):
         """
         pass
 
-    def compute_gan_losses(self, net_D_output, dis_update):
+    def compute_gan_losses(self, net_D_output,  dis_update, mask=None,):
         r"""Compute GAN loss and feature matching loss.
 
         Args:
@@ -687,7 +688,7 @@ class Trainer(BaseTrainer):
 
             FM_loss = self.criteria['FeatureMatching'](
                 net_D_output['pred_fake']['features'],
-                net_D_output['pred_real']['features'])
+                net_D_output['pred_real']['features'], mask)
             return GAN_loss, FM_loss
 
     def get_data_t(self, data, net_G_output, data_prev, t):

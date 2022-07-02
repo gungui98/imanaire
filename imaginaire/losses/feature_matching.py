@@ -2,7 +2,9 @@
 #
 # This work is made available under the Nvidia Source Code License-NC.
 # To view a copy of this license, check out LICENSE.md
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class FeatureMatchingLoss(nn.Module):
@@ -32,7 +34,17 @@ class FeatureMatchingLoss(nn.Module):
         loss = fake_features[0][0].new_tensor(0)
         for i in range(num_d):
             for j in range(len(fake_features[i])):
-                tmp_loss = self.criterion(fake_features[i][j],
-                                          real_features[i][j].detach())
+
+                # resize mask to match the size of the feature map
+                if mask is not None:
+                    h, w = fake_features[i][j].shape[2:]
+                    tmp_mask = F.interpolate(mask, size=(h, w), mode='bilinear',
+                                            align_corners=False)
+                    # calculate the loss
+                    tmp_loss = torch.mean(tmp_mask*torch.abs((fake_features[i][j] -
+                                        real_features[i][j].detach())))
+                else:
+                    tmp_loss = self.criterion(fake_features[i][j],
+                                              real_features[i][j].detach())
                 loss += dis_weight * tmp_loss
         return loss
