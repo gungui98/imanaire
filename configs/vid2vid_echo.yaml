@@ -10,6 +10,8 @@ num_epochs_temporal_step: 40
 # How often do you want to save output images during training.
 image_save_iter: 200
 
+snapshot_save_epoch: 1
+
 # Trainer options.
 trainer:
     type: imaginaire.trainers.vid2vid
