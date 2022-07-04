@@ -51,7 +51,7 @@ def rainbow_image(image_shape):
 def gen_noise_image(h, w):
     cone_size = [600, 400]
     xi, zi = create_mapping(cone_size[0], cone_size[1])
-    image = np.random.randint(0, 256, (400, 400), dtype=np.uint8)
+    image = np.random.randint(0, 256, (256, 256), dtype=np.uint8)
     # image[:] = [255, 0, 0]
     image = cv2.resize(image, (cone_size[0], cone_size[1]))
     # blur the image

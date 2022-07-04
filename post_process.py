@@ -27,12 +27,13 @@ def simulate(fake, real):
     sigma_y = 1.0
     sigma_x = 1.0
     sigma = [sigma_y, sigma_x]
-    #real_pha = sp.ndimage.gaussian_filter(real_pha, sigma, mode='constant')
+
+    # real_pha = sp.ndimage.gaussian_filter(real_pha, sigma, mode='constant')
 
     def blend(a_mag, a_pha, b_pha, alpha):
         c_mag = a_mag
-        c_pha = alpha*a_pha + (1-alpha)*b_pha
-        c = c_mag*np.exp(1j*c_pha)
+        c_pha = alpha * a_pha + (1 - alpha) * b_pha
+        c = c_mag * np.exp(1j * c_pha)
         z = np.fft.ifftn(c).real
         return np.uint8(z)
 
@@ -41,17 +42,35 @@ def simulate(fake, real):
         cv2.imshow(f'simulate{alpha}', z)
 
 
-
 def show_phase(name, img):
     mfft = np.fft.fftn(img)
     mag = np.abs(mfft)
     pha = np.angle(mfft)
 
     x = np.log(mag)
-    x = (x-np.min(x)) / (np.max(x)-np.min(x))
+    x = (x - np.min(x)) / (np.max(x) - np.min(x))
     cv2.imshow(f'{name} mag', x)
-    #plot(np.log(mag))
+    # plot(np.log(mag))
     cv2.imshow(f'{name} pha', pha)
+
+
+def label2binary(label):
+    label = label > 0
+    label = np.uint8(label*255)
+    label = cv2.dilate(label, np.ones((13, 13)))
+
+    label = label.astype(np.float32)
+    label = cv2.GaussianBlur(label, (151, 151), 50)
+    cv2.imshow('label', np.uint8(label))
+
+    # label = label * 255
+    # dialated = cv2.dilate(label, np.ones((3, 3)))
+    # scale to [0.2, 0.8]
+    label = (label - np.min(label)) / (np.max(label) - np.min(label))
+    label = label * 0.5 +0.5
+    print(np.min(label), np.max(label))
+    cv2.waitKey(0)
+    return label
 
 
 if __name__ == '__main__':
@@ -73,21 +92,30 @@ if __name__ == '__main__':
             # warp the image
             # frame = cv2.remap(frame, map_x, map_y, cv2.INTER_LINEAR)
             frame = video_frames[i]
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             h, w = frame.shape[:2]
-            predicted_frame = frame[:, w*2//4:w//4*3]
-            label_frame = frame[:, w//4:w//4*3]
+            predicted_frame = frame[:, w * 2 // 4:w // 4 * 3]
+            label_frame = frame[:, w // 4:w // 4 * 2]
+            label_frame = label2binary(label_frame)
+
             noise_frame = noise_images[np.random.randint(0, len(noise_images))]
-            noise_frame = cv2.cvtColor(noise_frame, cv2.COLOR_GRAY2BGR)
+            # noise_frame = cv2.cvtColor(noise_frame, cv2.COLOR_GRAY2BGR)
             # gausian filter the image
             predicted_frame = cv2.GaussianBlur(predicted_frame, (5, 5), 0)
-            add_noise = cv2.addWeighted(predicted_frame, 0.8, noise_frame, 0.2, 0)
+
+
+            predicted_frame_ = predicted_frame.astype(np.float32)
+            noise_frame_ = noise_frame.astype(np.float32)
+            add_noise = predicted_frame_ * label_frame + noise_frame_ * (1 - label_frame)
+            add_noise = add_noise.astype(np.uint8)
+            # add_noise = cv2.addWeighted(predicted_frame, 0.8, noise_frame, 0.2, 0)
 
             # simulate(noise_frame, predicted_frame)
             # cv2.waitKey(0)
 
             cv2.imshow('image', frame)
             cv2.imshow('noise', noise_frame)
-            cv2.imshow('add_warp', add_noise)
+            cv2.imshow('add_noise', add_noise)
             cv2.imshow('label_frame', label_frame)
             if cv2.waitKey(50) & 0xFF == ord('q'):
                 break
