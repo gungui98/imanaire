@@ -170,3 +170,41 @@ data:
         augmentations:
             resize_h_w: 512, 512
             horizontal_flip: False
+
+test_data:
+    name: 'cityscapes'
+    type: imaginaire.datasets.paired_videos
+    paired: True
+    num_workers: 4
+    input_types:
+        - images:
+            ext: jpg
+            num_channels: 3
+            normalize: True
+        - seg_maps:
+            ext: png
+            num_channels: 1
+            is_mask: True
+            normalize: False
+
+    full_data_ops: imaginaire.model_utils.label::make_one_hot, imaginaire.model_utils.label::concat_labels
+    use_dont_care: False
+    one_hot_num_classes:
+        seg_maps: 4
+    input_labels:
+        - seg_maps
+
+    input_image:
+        - images
+
+    # Validation dataset details.
+    test:
+        # Input LMDBs.
+        roots:
+            - E:/echo_gen_data/camus_cityscape_format/test_transfer
+        # Batch size per GPU.
+        batch_size: 1
+        # If resize_h_w is not given, then it is assumed to be same as crop_h_w.
+        augmentations:
+            resize_h_w: 512, 512
+            horizontal_flip: False
