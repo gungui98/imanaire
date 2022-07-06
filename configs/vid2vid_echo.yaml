@@ -182,7 +182,7 @@ test_data:
     num_workers: 4
     input_types:
         - images:
-            ext: jpg
+            ext: png
             num_channels: 3
             normalize: True
         - seg_maps:
