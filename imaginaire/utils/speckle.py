@@ -1,6 +1,7 @@
-
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 #
 # def read_mhd(img_path):
@@ -14,7 +15,6 @@ def create_mapping(rf_width, rf_height):
 
     # horizontal center of the image
     half_width = rf_width / 2.0
-
 
     x_axis = np.arange(rf_width, dtype=np.float32)
     y_axis = np.arange(rf_height, dtype=np.float32)
@@ -48,14 +48,38 @@ def rainbow_image(image_shape):
     return image
 
 
-def gen_noise_image(h, w):
+def gen_noise_image(h, w, distribution=None):
     cone_size = [600, 400]
     xi, zi = create_mapping(cone_size[0], cone_size[1])
-    image = np.random.randint(0, 256, (256, 256), dtype=np.uint8)
+    if distribution is None:
+        image = np.random.randint(0, 256, (h, w), dtype=np.uint8)
+        # image = None
+    else:
+        image = np.random.choice(np.arange(256), (h, w), p=distribution).astype(np.uint8)
     # image[:] = [255, 0, 0]
     image = cv2.resize(image, (cone_size[0], cone_size[1]))
     # blur the image
     image = cv2.blur(image, (15, 1))
+    # show histogram of the image and distribution
+    # plt.plot(distribution)
+    # plt.show()
+    # plt.hist(image.ravel(), bins=256, range=(0, 256))
+    # plt.show()
+    # cv2.imshow("noise", image)
+    # cv2.waitKey(0)
+
+    warp = cv2.remap(image, xi, zi, cv2.INTER_LINEAR)
+    warp = warp[:, 55:-55]
+    warp = cv2.resize(warp, (h, w))
+    return warp
+
+
+def cone_mask(h, w):
+    cone_size = [600, 400]
+    xi, zi = create_mapping(cone_size[0], cone_size[1])
+    image = np.ones((h, w), dtype=np.uint8) * 255
+    image = cv2.resize(image, (cone_size[0], cone_size[1]))
+    # blur the image
 
     warp = cv2.remap(image, xi, zi, cv2.INTER_LINEAR)
     warp = warp[:, 55:-55]
@@ -89,7 +113,6 @@ def gen_noise_image(h, w):
 #             # img = cv2.resize(img, (512, 512))
 #             # img_name = "{}/file_{:04d}.jpg".format(target_video_folder, i)
 #             # cv2.imwrite(img_name, img)
-
 
 
 if __name__ == '__main__':

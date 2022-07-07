@@ -246,7 +246,6 @@ class Trainer(BaseTrainer):
         # Whether to reuse generator output for both gen_update and
         # dis_update. It saves time but consumes a bit more memory.
         reuse_gen_output = getattr(self.cfg.trainer, 'reuse_gen_output', True)
-
         past_frames = [None, None]
         net_G_output = None
         data_prev = None

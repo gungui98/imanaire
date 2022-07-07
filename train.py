@@ -131,6 +131,9 @@ def main():
         if not args.single_gpu:
             train_data_loader.sampler.set_epoch(current_epoch)
         trainer.start_of_epoch(current_epoch)
+        # for it, data in enumerate(train_data_loader):
+        #     for k in data.keys():
+        #         print(data[k].shape)
         for it, data in enumerate(train_data_loader):
             with profiler.profile(enabled=args.profile,
                                   use_cuda=True,

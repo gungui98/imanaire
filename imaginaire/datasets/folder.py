@@ -24,6 +24,7 @@ class FolderDataset(data.Dataset):
     def __init__(self, root, metadata):
         self.root = os.path.expanduser(root)
         self.extensions = metadata
+        self.cache = dict()
 
         print('Folder at %s opened.' % (root))
 
@@ -57,9 +58,11 @@ class FolderDataset(data.Dataset):
         # Get value from key.
         filepath = os.path.join(self.root, path.decode() + '.' + ext)
         assert os.path.exists(filepath), '%s does not exist' % (filepath)
-        with open(filepath, 'rb') as f:
-            buf = f.read()
-
+        if filepath not in self.cache:
+            with open(filepath, 'rb') as f:
+                buf = f.read()
+            self.cache[filepath] = buf
+        buf = self.cache[filepath]
         # Decode and return.
         if is_image:
             try:
