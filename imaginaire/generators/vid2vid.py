@@ -198,9 +198,17 @@ class Generator(BaseNetwork):
            output (dict) : Dictionary of output data.
         """
         label = data['label']
-        label_prev, img_prev = data['prev_labels'], data['prev_images']
-        is_first_frame = img_prev is None
         bs, _, h, w = label.size()
+
+        label_prev, img_prev = data['prev_labels'], data['prev_images']
+
+        noisy_background = self.get_noisy_background(bs)
+
+        is_first_frame = img_prev is None
+        if not is_first_frame:
+            noisy_background = noisy_background.view(img_prev.size())
+            img_prev = noisy_background.to(label.device)
+
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -286,19 +294,16 @@ class Generator(BaseNetwork):
         img_raw = None
         if self.spade_combine and self.generate_raw_output:
             img_raw = torch.tanh(self.conv_img(x_raw_img))
-        if warp_prev and not self.spade_combine:
-            img_raw = img_final
-            img_final = img_final * mask + img_warp * (1 - mask)
+
 
         # add speckle noise to final image
 
-        noisy_background = self.get_noisy_background(img_final.shape[0])
-        noisy_background = noisy_background.to(img_final.device)
-        combine = torch.cat([img_final, noisy_background], dim=1)
-        weight_map = torch.sigmoid(self.combine(combine))
-        # force the weight map to be 0.2 to 0.8u
-        weight_map = (weight_map - 0.2) / (0.8 - 0.2)
-        img_final = noisy_background * weight_map + img_final * (1 - weight_map)
+
+        # combine = torch.cat([img_final, noisy_background], dim=1)
+        # weight_map = torch.sigmoid(self.combine(combine))
+        # # force the weight map to be 0.2 to 0.8u
+        # weight_map = (weight_map - 0.2) / (0.8 - 0.2)
+        # img_final = noisy_background * weight_map + img_final * (1 - weight_map)
 
         # get tensor where labels are 0 or 1
         label_background = label[:, :1] + label[:, 1:2]
@@ -306,6 +311,13 @@ class Generator(BaseNetwork):
         # label_background = label_background.repeat(1, 3, 1, 1)
         # blur the label background
         # label_background = torchvision.transforms.GaussianBlur(kernel_size=3)(label_background)
+
+        if warp_prev and not self.spade_combine:
+            img_raw = img_final
+            img_final = img_final * mask + img_warp * (1 - mask)
+            weight_map = mask
+        else:
+            weight_map = torch.ones_like(img_final)
 
         output = dict()
         output['fake_images'] = img_final
