@@ -7,6 +7,7 @@ import torch.nn as nn
 from imaginaire.layers import LinearBlock
 
 
+
 class Discriminator(nn.Module):
     """Dummy Discriminator constructor.
 

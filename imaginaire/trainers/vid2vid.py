@@ -852,23 +852,23 @@ class Trainer(BaseTrainer):
                 *vis_labels_start,
                 tensor2im(data['images'][:, -1]),
                 tensor2im(net_G_output['fake_images']),
-                tensor2im(net_G_output['fake_raw_images'])]
+                ]
             if self.cfg.trainer.model_average_config.enabled:
                 vis_images += [
                     tensor2im(net_G_output_avg['fake_images']),
-                    tensor2im(net_G_output_avg['fake_raw_images'])]
+                    ]
 
             if self.sequence_length > 1:
                 vis_images_first = [
                     *vis_labels_end,
                     tensor2im(data['images'][:, 0]),
                     tensor2im(first_net_G_output['fake_images']),
-                    tensor2im(first_net_G_output['fake_raw_images'])
+
                 ]
                 if self.cfg.trainer.model_average_config.enabled:
                     vis_images_first += [
                         tensor2im(first_net_G_output_avg['fake_images']),
-                        tensor2im(first_net_G_output_avg['fake_raw_images'])]
+                        ]
 
                 if self.use_flow:
                     flow_gt, conf_gt = self.criteria['Flow'].flowNet(
@@ -881,8 +881,6 @@ class Trainer(BaseTrainer):
                     ]
                     vis_images += [
                         tensor2flow(net_G_output['fake_flow_maps']),
-                        tensor2im(net_G_output['fake_occlusion_masks'],
-                                  normalize=False),
                         tensor2im(net_G_output['warped_images']),
                     ]
                     if self.cfg.trainer.model_average_config.enabled:
