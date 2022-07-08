@@ -65,7 +65,7 @@ dis_opt:
 
 # Model options.
 gen:
-    type: imaginaire.generators.vid2vid
+    type: imaginaire.generators.echo_unet
     num_layers: 7
     num_downsamples_img: 4
     num_filters: 8
@@ -79,23 +79,6 @@ gen:
     weight_norm_type: spectral
     style_dims: 256
     use_segmap_as_input: True
-    flow:
-        num_filters: 8
-        max_num_filters: 128
-        num_downsamples: 5
-        num_res_blocks: 6
-        activation_norm_type: instance
-        weight_norm_type: spectral
-        flow_output_multiplier: 40
-        generate_raw_output: False
-        multi_spade_combine:
-            num_layers: 3
-            embed:
-                arch: unet
-                num_filters: 8
-                num_downsamples: 5
-                kernel_size: 3
-                weight_norm_type: spectral
     embed:
         use_embed: True
         arch: encoderdecoder
@@ -106,7 +89,7 @@ gen:
         weight_norm_type: spectral
 
 dis:
-    type: imaginaire.discriminators.fs_vid2vid
+    type: imaginaire.discriminators.echo_discriminator
     image:
         num_filters: 8
         max_num_filters: 128
