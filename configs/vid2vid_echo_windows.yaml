@@ -1,7 +1,7 @@
 # How often do you want to log the training stats.
 logging_iter: 1
 # Number of training epochs.
-max_iter: 10
+max_iter: 100
 # Number of epochs training single frame generator.
 single_frame_epoch: 0
 # How often to double the number of training frames in each clip.
@@ -32,6 +32,7 @@ trainer:
         feature_matching: 10.0
         temporal_gan: 0.0
         perceptual: 10.0
+        L1: 10.0
     init:
         type: xavier
         gain: 0.02
