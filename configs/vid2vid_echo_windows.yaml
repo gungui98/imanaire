@@ -20,7 +20,7 @@ trainer:
         start_iteration: 500
         num_batch_norm_estimation_iterations: 0
     num_videos_to_test: 64
-    num_frames_per_video: 10
+    num_frames_per_video: 3
     gan_mode: hinge
     gan_relativistic: False
     perceptual_loss:
@@ -153,7 +153,7 @@ data:
             - E:/echo_gen_data/camus_cityscape_format/train_small
         # Batch size per GPU.
         batch_size: 2
-        initial_sequence_length: 10
+        initial_sequence_length: 3
         # Data augmentations to be performed in given order.
         augmentations:
             resize_h_w: 512, 512
