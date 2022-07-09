@@ -496,17 +496,17 @@ class Trainer(BaseTrainer):
                         net_G_output['fake_weight_maps'], net_G_output['label_background'])
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
-                if 'raw' in net_D_output:
-                    raw_GAN_losses = self.compute_gan_losses(
-                        net_D_output['raw'], dis_update=False
-                    )
-                    fg_mask = get_fg_mask(data_t['label'], self.has_fg)
-                    raw_perceptual_loss = self.criteria['Perceptual'](
-                        net_G_output['fake_raw_images'] * fg_mask,
-                        data_t['image'] * fg_mask)
-                    self.gen_losses['GAN'] += raw_GAN_losses[0]
-                    self.gen_losses['FeatureMatching'] += raw_GAN_losses[1]
-                    self.gen_losses['Perceptual'] += raw_perceptual_loss
+                # if 'raw' in net_D_output:
+                #     raw_GAN_losses = self.compute_gan_losses(
+                #         net_D_output['raw'], dis_update=False
+                #     )
+                #     fg_mask = get_fg_mask(data_t['label'], self.has_fg)
+                #     raw_perceptual_loss = self.criteria['Perceptual'](
+                #         net_G_output['fake_raw_images'] * fg_mask,
+                #         data_t['image'] * fg_mask)
+                #     self.gen_losses['GAN'] += raw_GAN_losses[0]
+                #     self.gen_losses['FeatureMatching'] += raw_GAN_losses[1]
+                #     self.gen_losses['Perceptual'] += raw_perceptual_loss
 
                 # Additional discriminator losses.
                 if self.add_dis_cfg is not None:
