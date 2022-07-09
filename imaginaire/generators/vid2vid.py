@@ -205,9 +205,10 @@ class Generator(BaseNetwork):
 
         is_first_frame = img_prev is None
         if not is_first_frame:
-            noisy_background = noisy_background.view(img_prev.size())
-            img_prev = noisy_background.to(label.device)
-
+            n_image = img_prev.size(1)
+            noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
+            noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
+            img_prev = noisy_backgrounds.to(label.device)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -294,9 +295,7 @@ class Generator(BaseNetwork):
         if self.spade_combine and self.generate_raw_output:
             img_raw = torch.tanh(self.conv_img(x_raw_img))
 
-
         # add speckle noise to final image
-
 
         # combine = torch.cat([img_final, noisy_background], dim=1)
         # weight_map = torch.sigmoid(self.combine(combine))
