@@ -312,7 +312,7 @@ class Generator(BaseNetwork):
 
         if warp_prev and not self.spade_combine:
             img_raw = img_final
-            img_final = img_final * mask + img_warp * (1 - mask)
+            img_final = img_final * (1-mask) + img_warp * mask
             weight_map = mask
         else:
             weight_map = torch.ones_like(img_final)
