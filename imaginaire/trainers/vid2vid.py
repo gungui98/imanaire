@@ -478,7 +478,8 @@ class Trainer(BaseTrainer):
                 # Individual frame GAN loss and feature matching loss.
                 self.gen_losses['GAN'], self.gen_losses['FeatureMatching'] = \
                     self.compute_gan_losses(net_D_output['indv'],
-                                            mask=1 - net_G_output["label_background"],
+                                            # mask=1 - net_G_output["label_background"],
+                                            mask=None,
                                             dis_update=False)
 
                 # Perceptual loss.
