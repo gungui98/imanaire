@@ -154,7 +154,7 @@ data:
             - /home/jovyan/data/camus_cityscape_format/train
         # Batch size per GPU.
         batch_size: 3
-        initial_sequence_length: 3
+        initial_sequence_length: 10
         # Data augmentations to be performed in given order.
         augmentations:
             resize_h_w: 512, 512
