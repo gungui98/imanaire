@@ -203,7 +203,7 @@ class Generator(BaseNetwork):
         label_prev, img_prev = data['prev_labels'], data['prev_images']
         noisy_background = self.get_noisy_background(bs)
 
-        is_first_frame = img_prev is None
+        is_first_frame = True
         if not is_first_frame:
             n_image = img_prev.size(1)
             noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
