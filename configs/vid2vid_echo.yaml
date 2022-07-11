@@ -3,7 +3,7 @@ logging_iter: 200
 # Number of training epochs.
 max_iter: 120000
 # Number of epochs training single frame generator.
-#single_frame_epoch: 50
+single_frame_epoch: 0
 # How often to double the number of training frames in each clip.
 num_epochs_temporal_step: 40
 
