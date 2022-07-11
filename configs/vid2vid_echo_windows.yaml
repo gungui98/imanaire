@@ -14,11 +14,11 @@ trainer:
     type: imaginaire.trainers.vid2vid
     amp_config:
         enabled: True
-    model_average_config:
-        enabled: True
-        beta: 0.999
-        start_iteration: 500
-        num_batch_norm_estimation_iterations: 0
+#    model_average_config:
+#        enabled: True
+#        beta: 0.999
+#        start_iteration: 500
+#        num_batch_norm_estimation_iterations: 0
     num_videos_to_test: 64
     num_frames_per_video: 3
     gan_mode: hinge
