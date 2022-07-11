@@ -164,6 +164,7 @@ class Generator(BaseNetwork):
             image = image[:, 55:-55]
             image = cv2.resize(image, (512, 512))
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
             # real_image = data["image"]
             # from imaginaire.utils.visualization import tensor2im
             #
@@ -177,6 +178,16 @@ class Generator(BaseNetwork):
             image = torchvision.transforms.ToTensor()(image)
             image = image.unsqueeze(0)
             noisy_images.append(image)
+
+        label = np.ones((512, 512), dtype=np.uint8)
+        label = cv2.remap(label, x_map, y_map, cv2.INTER_NEAREST)
+        label = label[:, 55:-55]
+        label = cv2.resize(label, (512, 512))
+        label = torchvision.transforms.ToTensor()(label)
+        label = label.unsqueeze(0)
+        label = torch.cat([1 - label, label, label, label], dim=1)
+
+        self.label_background = label
         self.noisy_backgrounds = noisy_images
 
     def get_noisy_background(self, batch_size):
@@ -208,7 +219,9 @@ class Generator(BaseNetwork):
             n_image = img_prev.size(1)
             noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
             noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
+            label_background = self.label_background[None, ...].repeat(bs, n_image, 1, 1, 1)
             img_prev = noisy_backgrounds.to(label.device)
+            label_prev = label_background.to(label.device)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -217,38 +230,38 @@ class Generator(BaseNetwork):
         # first frame) or encoded previous frame (for subsequent frames).
         if is_first_frame:
             # First frame in the sequence, start from scratch.
-            x_img = F.interpolate(label, size=(self.sh, self.sw))
-            x_img = self.fc(x_img)
+            label_inter = F.interpolate(label, size=(self.sh, self.sw))
+            x_output = self.fc(label_inter)
 
             # Upsampling layers.
             for i in range(self.num_layers, self.num_downsamples_img, -1):
                 j = min(self.num_downsamples_embed, i)
-                x_img = getattr(self, 'up_' + str(i))(x_img, *cond_maps_now[j])
-                x_img = self.upsample(x_img)
+                x_output = getattr(self, 'up_' + str(i))(x_output, *cond_maps_now[j])
+                x_output = self.upsample(x_output)
         else:
             # Not the first frame, will encode the previous frame and feed to
             # the generator.
-            x_img = self.down_first(img_prev[:, -1])
+            prev_frame_feature = self.down_first(img_prev[:, -1])
 
             # Get label embedding for the previous frame.
-            cond_maps_prev = self.get_cond_maps(label_prev[:, -1],
-                                                self.label_embedding)
+            cond_maps_label_prev = self.get_cond_maps(label_prev[:, -1],
+                                                      self.label_embedding)
 
             # Downsampling layers.
             for i in range(self.num_downsamples_img + 1):
                 j = min(self.num_downsamples_embed, i)
-                x_img = getattr(self, 'down_' + str(i))(x_img,
-                                                        *cond_maps_prev[j])
+                prev_frame_feature = getattr(self, 'down_' + str(i))(prev_frame_feature,
+                                                                     *cond_maps_label_prev[j])
                 if i != self.num_downsamples_img:
-                    x_img = self.downsample(x_img)
+                    prev_frame_feature = self.downsample(prev_frame_feature)
 
             # Resnet blocks.
             j = min(self.num_downsamples_embed, self.num_downsamples_img + 1)
             for i in range(self.num_res_blocks):
-                cond_maps = cond_maps_prev[j] if i < self.num_res_blocks // 2 \
+                cond_maps = cond_maps_label_prev[j] if i < self.num_res_blocks // 2 \
                     else cond_maps_now[j]
-                x_img = getattr(self, 'res_' + str(i))(x_img, *cond_maps)
-
+                prev_frame_feature = getattr(self, 'res_' + str(i))(prev_frame_feature, *cond_maps)
+            x_output = prev_frame_feature
         flow = mask = img_warp = None
 
         num_frames_G = self.num_frames_G
@@ -279,17 +292,17 @@ class Generator(BaseNetwork):
             # For raw output generation.
             if self.generate_raw_output:
                 if i >= self.num_multi_spade_layers - 1:
-                    x_raw_img = x_img
+                    x_raw_img = x_output
                 if i < self.num_multi_spade_layers:
                     x_raw_img = self.one_up_conv_layer(x_raw_img, cond_maps, i)
 
             # For final output.
             if warp_prev and i < self.num_multi_spade_layers:
                 cond_maps += cond_maps_img[j]
-            x_img = self.one_up_conv_layer(x_img, cond_maps, i)
+            x_output = self.one_up_conv_layer(x_output, cond_maps, i)
 
         # Final conv layer.
-        img_final = torch.tanh(self.conv_img(x_img))
+        img_final = torch.tanh(self.conv_img(x_output))
 
         img_raw = None
         if self.spade_combine and self.generate_raw_output:
@@ -312,7 +325,7 @@ class Generator(BaseNetwork):
 
         if warp_prev and not self.spade_combine:
             img_raw = img_final
-            img_final = img_final * (1-mask) + img_warp * mask
+            img_final = img_final * (1 - mask) + img_warp * mask
             weight_map = mask
         else:
             weight_map = torch.ones_like(img_final)

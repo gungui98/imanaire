@@ -108,6 +108,7 @@ def get_model_optimizer_and_scheduler(cfg, seed=0):
     #         nn.init.constant_(p.data, 1.)
     net_G = net_G.to('cuda')
     net_D = net_D.to('cuda')
+
     # Different GPU copies of the same model will receive noises
     # initialized with different random seeds (if applicable) thanks to the
     # set_random_seed command (GPU #K has random seed = args.seed + K).
