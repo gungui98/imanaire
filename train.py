@@ -165,6 +165,7 @@ def main():
                 pass
 
         current_epoch += 1
+        trainer.save_checkpoint(current_epoch, current_iteration)
         trainer.end_of_epoch(data, current_epoch, current_iteration)
     print('Done with training!!!')
     return
