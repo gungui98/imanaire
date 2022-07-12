@@ -215,7 +215,7 @@ class Generator(BaseNetwork):
         bs, _, h, w = label.size()
 
         label_prev, img_prev = data['prev_labels'], data['prev_images']
-        is_first_frame = True
+        is_first_frame = label_prev is None
 
         # noisy_background = self.get_noisy_background(bs)
         # if not is_first_frame:
@@ -309,13 +309,13 @@ class Generator(BaseNetwork):
 
             # For final output.
             if warp_prev and i < self.num_multi_spade_layers:
-                cond_maps += cond_maps_img[j]
-            if i < self.num_multi_spade_layers:
+                cond_maps += [cond_maps_img[j][0] + cond_maps_noise[j][0]]
+            if not warp_prev and i < self.num_multi_spade_layers:
                 cond_maps += cond_maps_noise[j]
             x_output = self.one_up_conv_layer(x_output, cond_maps, i)
 
         # Final conv layer.
-        img_final = torch.sigmoid(self.conv_img(x_output))
+        img_final = torch.tanh(self.conv_img(x_output))
 
         img_raw = None
         if self.spade_combine and self.generate_raw_output:
@@ -340,7 +340,7 @@ class Generator(BaseNetwork):
             img_raw = img_final
             img_final = img_final * mask + img_warp * (1 - mask)
 
-        img_final = img_final * (1 - noise_mask) + noise_mask * noise
+        # img_final = img_final * (1 - noise_mask) + noise_mask * noise
 
         output = dict()
         output['fake_images'] = img_final
