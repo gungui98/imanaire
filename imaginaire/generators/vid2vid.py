@@ -315,7 +315,7 @@ class Generator(BaseNetwork):
             x_output = self.one_up_conv_layer(x_output, cond_maps, i)
 
         # Final conv layer.
-        img_final = torch.tanh(self.conv_img(x_output))
+        img_final = torch.sigmoid(self.conv_img(x_output))
 
         img_raw = None
         if self.spade_combine and self.generate_raw_output:
