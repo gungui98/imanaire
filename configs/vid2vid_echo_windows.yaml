@@ -103,6 +103,15 @@ gen:
         kernel_size: 3
         weight_norm_type: spectral
 
+    noise_embed:
+        use_embed: True
+        arch: encoderdecoder
+        num_filters: 8
+        max_num_filters: 128
+        num_downsamples: 5
+        kernel_size: 3
+        weight_norm_type: spectral
+
 dis:
     type: imaginaire.discriminators.fs_vid2vid
     image:

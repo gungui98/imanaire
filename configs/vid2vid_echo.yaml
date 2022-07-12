@@ -8,7 +8,7 @@ single_frame_epoch: 0
 num_epochs_temporal_step: 40
 
 # How often do you want to save output images during training.
-image_save_iter: 200
+image_save_iter: 100
 
 # Trainer options.
 trainer:
@@ -96,6 +96,15 @@ gen:
                 kernel_size: 3
                 weight_norm_type: spectral
     embed:
+        use_embed: True
+        arch: encoderdecoder
+        num_filters: 8
+        max_num_filters: 128
+        num_downsamples: 5
+        kernel_size: 3
+        weight_norm_type: spectral
+
+    noise_embed:
         use_embed: True
         arch: encoderdecoder
         num_filters: 8

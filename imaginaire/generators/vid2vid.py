@@ -130,6 +130,10 @@ class Generator(BaseNetwork):
                                    self.get_num_filters(i))
             setattr(self, 'up_%d' % i, layer)
 
+        # noise ejection
+        self.noise_embedding = LabelEmbedder(getattr(gen_cfg, 'noise_embed', None), 4)
+        self.noise_combine = Conv2dBlock(4, 1, kernel_size=1, stride=1)
+
         # Final conv layer.
         self.conv_img = Conv2dBlock(num_filters, num_img_channels,
                                     kernel_size, padding=padding,
@@ -143,10 +147,10 @@ class Generator(BaseNetwork):
         # Misc.
         self.downsample = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.upsample = partial(F.interpolate, scale_factor=2)
-        self.combine = Conv2dBlock(6, 3, kernel_size=1, stride=1)
         self.noisy_backgrounds = []
         self.init_temporal_network()
         self._init_noisy_background()
+
 
     def _init_noisy_background(self, ):
         r"""
@@ -185,7 +189,6 @@ class Generator(BaseNetwork):
         label = cv2.resize(label, (512, 512))
         label = torchvision.transforms.ToTensor()(label)
         label = label.unsqueeze(0)
-        label = torch.cat([1 - label, label, label, label], dim=1)
 
         self.label_background = label
         self.noisy_backgrounds = noisy_images
@@ -212,16 +215,16 @@ class Generator(BaseNetwork):
         bs, _, h, w = label.size()
 
         label_prev, img_prev = data['prev_labels'], data['prev_images']
-        noisy_background = self.get_noisy_background(bs)
+        is_first_frame = True
 
-        is_first_frame = img_prev is None
-        if not is_first_frame:
-            n_image = img_prev.size(1)
-            noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
-            noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
-            label_background = self.label_background[None, ...].repeat(bs, n_image, 1, 1, 1)
-            img_prev = noisy_backgrounds.to(label.device)
-            label_prev = label_background.to(label.device)
+        # noisy_background = self.get_noisy_background(bs)
+        # if not is_first_frame:
+        #     n_image = img_prev.size(1)
+        #     noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
+        #     noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
+        #     label_background = self.label_background[None, ...].repeat(bs, n_image, 1, 1, 1)
+        #     img_prev = noisy_backgrounds.to(label.device)
+        #     label_prev = label_background.to(label.device)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -283,6 +286,14 @@ class Generator(BaseNetwork):
                                                    self.img_prev_embedding)
                 x_raw_img = None
 
+        # generate noise
+        label_noise = self.label_background.repeat(bs, 1, 1, 1).to(label.device)
+        noise = self.get_noisy_background(bs).to(label.device)
+        noise_input = torch.cat([label_noise, noise], dim=1)
+        cond_maps_noise = self.get_cond_maps(noise_input, self.noise_embedding)
+        noise_mask = self.noise_combine(noise_input, *cond_maps_noise)
+        noise_mask = torch.sigmoid(noise_mask)
+
         # Main image generation branch.
         for i in range(self.num_downsamples_img, -1, -1):
             # Get SPADE conditional inputs.
@@ -299,6 +310,8 @@ class Generator(BaseNetwork):
             # For final output.
             if warp_prev and i < self.num_multi_spade_layers:
                 cond_maps += cond_maps_img[j]
+            if i < self.num_multi_spade_layers:
+                cond_maps += cond_maps_noise[j]
             x_output = self.one_up_conv_layer(x_output, cond_maps, i)
 
         # Final conv layer.
@@ -325,10 +338,9 @@ class Generator(BaseNetwork):
 
         if warp_prev and not self.spade_combine:
             img_raw = img_final
-            img_final = img_final * (1 - mask) + img_warp * mask
-            weight_map = mask
-        else:
-            weight_map = torch.ones_like(img_final)
+            img_final = img_final * mask + img_warp * (1 - mask)
+
+        img_final = img_final * (1 - noise_mask) + noise_mask * noise
 
         output = dict()
         output['fake_images'] = img_final
@@ -336,8 +348,8 @@ class Generator(BaseNetwork):
         output['fake_occlusion_masks'] = mask
         output['fake_raw_images'] = img_raw
         output['warped_images'] = img_warp
-        output['fake_weight_maps'] = weight_map
-        output['noise_background'] = noisy_background
+        output['fake_weight_maps'] = noise_mask
+        output['noise_background'] = noise
         output['label_background'] = label_background
         return output
 
@@ -419,6 +431,8 @@ class Generator(BaseNetwork):
             if cfg_init is not None:
                 self.img_prev_embedding.apply(weights_init(cfg_init.type,
                                                            cfg_init.gain))
+
+
 
     def get_cond_dims(self, num_downs=0):
         r"""Get the dimensions of conditional inputs.
