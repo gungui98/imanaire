@@ -35,6 +35,7 @@ trainer:
         temporal_gan: 0.0
         perceptual: 10.0
         flow: 10.0
+        L1: 10.0
     init:
         type: xavier
         gain: 0.02
