@@ -4,10 +4,12 @@
 # To view a copy of this license, check out LICENSE.md
 from functools import partial
 
+import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 
 from imaginaire.generators.fs_vid2vid import LabelEmbedder
 from imaginaire.layers import Conv2dBlock, LinearBlock, Res2dBlock
@@ -16,6 +18,7 @@ from imaginaire.model_utils.fs_vid2vid import (extract_valid_pose_labels,
 from imaginaire.utils.data import (get_paired_input_image_channel_number,
                                    get_paired_input_label_channel_number)
 from imaginaire.utils.init_weight import weights_init
+from imaginaire.utils.speckle import create_mapping
 
 
 class BaseNetwork(nn.Module):
@@ -151,6 +154,50 @@ class Generator(BaseNetwork):
         self.downsample = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.upsample = partial(F.interpolate, scale_factor=2)
         self.init_temporal_network()
+        self._init_noisy_background()
+        self.label_background = None
+        self.noisy_backgrounds = None
+
+    def _init_noisy_background(self, ):
+        r"""
+        Initialize the noisy background.
+        """
+        x_map, y_map = create_mapping(600, 400)
+        noisy_images = []
+        for i in range(100):
+            image = np.random.randint(0, 256, (400, 400), dtype=np.uint8)
+            image = cv2.resize(image, (600, 400))
+            # blur the image
+            image = cv2.blur(image, (15, 1))
+            # resize
+            image = cv2.remap(image, x_map, y_map, cv2.INTER_LINEAR)
+            image = image[:, 55:-55]
+            image = cv2.resize(image, (512, 512))
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+            # real_image = data["image"]
+            # from imaginaire.utils.visualization import tensor2im
+            #
+            # real_image = tensor2im(real_image)[0]
+            # real_image = cv2.resize(real_image, (512, 512))
+            # add_weighted_image = cv2.addWeighted(image, 0.5, real_image, 0.5, 0)
+            # cv2.imshow("add_weighted_image", add_weighted_image)
+            # cv2.waitKey(0)
+
+            # convert to tensor
+            image = torchvision.transforms.ToTensor()(image)
+            image = image.unsqueeze(0)
+            noisy_images.append(image)
+
+        label = np.ones((512, 512), dtype=np.uint8)
+        label = cv2.remap(label, x_map, y_map, cv2.INTER_NEAREST)
+        label = label[:, 55:-55]
+        label = cv2.resize(label, (512, 512))
+        label = torchvision.transforms.ToTensor()(label)
+        label = label.unsqueeze(0)
+
+        self.label_background = label
+        self.noisy_backgrounds = noisy_images
 
     def forward(self, data):
         r"""vid2vid generator forward.
@@ -215,26 +262,6 @@ class Generator(BaseNetwork):
                     else cond_maps_now[j]
                 x_img = getattr(self, 'res_' + str(i))(x_img, *cond_maps)
 
-        flow = mask = img_warp = None
-
-        num_frames_G = self.num_frames_G
-        # Whether to warp the previous frame or not.
-        warp_prev = self.temporal_initialized and not is_first_frame and \
-            label_prev.shape[1] == num_frames_G - 1
-        if warp_prev:
-            # Estimate flow & mask.
-            label_concat = torch.cat([label_prev.view(bs, -1, h, w),
-                                      label], dim=1)
-            img_prev_concat = img_prev.view(bs, -1, h, w)
-            flow, mask = self.flow_network_temp(label_concat, img_prev_concat)
-            img_warp = resample(img_prev[:, -1], flow)
-            if self.spade_combine:
-                # if using SPADE combine, integrate the warped image (and
-                # occlusion mask) into conditional inputs for SPADE.
-                img_embed = torch.cat([img_warp, mask], dim=1)
-                cond_maps_img = self.get_cond_maps(img_embed,
-                                                   self.img_prev_embedding)
-                x_raw_img = None
 
         # Main image generation branch.
         for i in range(self.num_downsamples_img, -1, -1):
@@ -250,26 +277,14 @@ class Generator(BaseNetwork):
                     x_raw_img = self.one_up_conv_layer(x_raw_img, cond_maps, i)
 
             # For final output.
-            if warp_prev and i < self.num_multi_spade_layers:
-                cond_maps += cond_maps_img[j]
+
             x_img = self.one_up_conv_layer(x_img, cond_maps, i)
 
         # Final conv layer.
         img_final = torch.tanh(self.conv_img(x_img))
 
-        img_raw = None
-        if self.spade_combine and self.generate_raw_output:
-            img_raw = torch.tanh(self.conv_img(x_raw_img))
-        if warp_prev and not self.spade_combine:
-            img_raw = img_final
-            img_final = img_final * mask + img_warp * (1 - mask)
-
         output = dict()
         output['fake_images'] = img_final
-        output['fake_flow_maps'] = flow
-        output['fake_occlusion_masks'] = mask
-        output['fake_raw_images'] = img_raw
-        output['warped_images'] = img_warp
         return output
 
     def one_up_conv_layer(self, x, encoded_label, i):

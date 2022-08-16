@@ -15,6 +15,7 @@ from tqdm import tqdm
 from imaginaire.evaluation.fid import compute_fid
 from imaginaire.losses import (FeatureMatchingLoss, FlowLoss, GANLoss,
                                PerceptualLoss)
+from imaginaire.losses.L1_cha import L1_Charbonnier_loss
 from imaginaire.model_utils.fs_vid2vid import (concat_frames, detach,
                                                get_fg_mask,
                                                pre_process_densepose, resample)
@@ -120,7 +121,10 @@ class Trainer(BaseTrainer):
 
         # L1 Loss.
         if getattr(loss_weight, 'L1', 0) > 0:
-            self._assign_criteria('L1', torch.nn.L1Loss(), loss_weight.L1)
+            self._assign_criteria('L1', L1_Charbonnier_loss(), loss_weight.L1)
+
+        if getattr(loss_weight, 'MSE', 0) > 0:
+            self._assign_criteria('MSE', torch.nn.MSELoss(), loss_weight.MSE)
 
         # Whether to add an additional discriminator for specific regions.
         self.add_dis_cfg = getattr(self.cfg.dis, 'additional_discriminators',
@@ -486,6 +490,11 @@ class Trainer(BaseTrainer):
                 if getattr(self.cfg.trainer.loss_weight, 'L1', 0) > 0:
                     self.gen_losses['L1'] = self.criteria['L1'](
                         net_G_output['fake_images'], data_t['image'])
+
+                    # mse loss.
+                    if getattr(self.cfg.trainer.loss_weight, 'MSE', 0) > 0:
+                        self.gen_losses['MSE'] = self.criteria['MSE'](
+                            net_G_output['fake_images'], data_t['image'])
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
                 if 'raw' in net_D_output:

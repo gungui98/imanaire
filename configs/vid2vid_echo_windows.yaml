@@ -42,7 +42,7 @@ trainer:
 # optimization option
 gen_opt:
     type: adam
-    lr: 0.0001
+    lr: 0.001
     adam_beta1: 0.
     adam_beta2: 0.999
     lr_policy:
@@ -52,7 +52,7 @@ gen_opt:
         gamma: 0.9
 dis_opt:
     type: adam
-    lr: 0.0004
+    lr: 0.004
     adam_beta1: 0.
     adam_beta2: 0.999
     lr_policy:
@@ -64,7 +64,7 @@ dis_opt:
 # Model options.
 gen:
     type: imaginaire.generators.vid2vid
-    num_layers: 7
+    num_layers: 5
     num_downsamples_img: 4
     num_filters: 8
     max_num_filters: 128
@@ -78,7 +78,7 @@ gen:
     style_dims: 256
     use_segmap_as_input: True
     flow:
-        num_filters: 8
+        num_filters: 5
         max_num_filters: 128
         num_downsamples: 5
         num_res_blocks: 6
