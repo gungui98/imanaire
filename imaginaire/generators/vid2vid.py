@@ -285,6 +285,10 @@ class Generator(BaseNetwork):
 
         output = dict()
         output['fake_images'] = img_final
+        output['fake_flow_maps'] = torch.zeros_like(label)
+        output['fake_occlusion_masks'] = torch.zeros((bs, 1, h, w))
+        output['fake_raw_images'] = img_final
+        output['warped_images'] = img_final
         return output
 
     def one_up_conv_layer(self, x, encoded_label, i):
