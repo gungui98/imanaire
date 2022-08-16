@@ -518,10 +518,10 @@ class Trainer(BaseTrainer):
                                                     dis_update=False)
 
                 # Flow and mask loss.
-                if self.use_flow:
-                    (self.gen_losses['Flow_L1'], self.gen_losses['Flow_Warp'],
-                     self.gen_losses['Flow_Mask']) = self.criteria['Flow'](
-                        data_t, net_G_output, self.current_epoch)
+                # if self.use_flow:
+                #     (self.gen_losses['Flow_L1'], self.gen_losses['Flow_Warp'],
+                #      self.gen_losses['Flow_Mask']) = self.criteria['Flow'](
+                #         data_t, net_G_output, self.current_epoch)
 
                 # Temporal GAN loss and feature matching loss.
                 if self.cfg.trainer.loss_weight.temporal_gan > 0:
