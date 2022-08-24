@@ -55,7 +55,7 @@ class Discriminator(nn.Module):
                                             self.num_netDT_input_channels))
         self.has_fg = getattr(data_cfg, 'has_foreground', False)
 
-    def forward(self, data, net_G_output, past_frames):
+    def forward(self, data, net_G_output, past_frames, prev_data = None):
         r"""Discriminator forward.
 
         Args:
@@ -89,6 +89,18 @@ class Discriminator(nn.Module):
         output['indv'] = dict()
         output['indv']['pred_real'] = pred_real
         output['indv']['pred_fake'] = pred_fake
+
+        # temporal frame loss
+        if prev_data is not None:
+            diff_real_image = torch.abs(real_image - prev_data["image"])
+
+            diff_fake_image = torch.abs(fake_image - prev_data["image"])
+
+            diff_pred_real, diff_pred_fake = self.discrminate_image(self.net_D, label,
+                                                          diff_real_image, diff_fake_image)
+            output['diff'] = dict()
+            output['diff']['pred_real'] = diff_pred_real
+            output['diff']['pred_fake'] = diff_pred_fake
 
         if 'fake_raw_images' in net_G_output and \
                 net_G_output['fake_raw_images'] is not None:

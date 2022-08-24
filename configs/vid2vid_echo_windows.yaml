@@ -31,7 +31,7 @@ trainer:
         gan: 1.0
         feature_matching: 10.0
         temporal_gan: 0.0
-        perceptual: 10.0
+        perceptual: 0.0
         flow: 10.0
     init:
         type: xavier
@@ -42,7 +42,7 @@ trainer:
 # optimization option
 gen_opt:
     type: adam
-    lr: 0.001
+    lr: 0.0001
     adam_beta1: 0.
     adam_beta2: 0.999
     lr_policy:

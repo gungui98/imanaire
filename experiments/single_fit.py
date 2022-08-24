@@ -3,14 +3,41 @@ fit model to single datapoint
 """
 import cv2
 import torch
+import torchvision
+import numpy as np
 from torch import nn
 from imaginaire.config import Config
 from imaginaire.generators.unet import UNet
 from imaginaire.losses import PerceptualLoss
 from imaginaire.model_utils.fs_vid2vid import concat_frames
 from imaginaire.utils.dataset import get_train_and_val_dataloader
+from imaginaire.utils.speckle import create_mapping
 from imaginaire.utils.trainer import get_model_optimizer_and_scheduler
 from imaginaire.utils.visualization import tensor2im
+
+
+def init_noisy_background():
+    r"""
+    Initialize the noisy background.
+    """
+    x_map, y_map = create_mapping(600, 400)
+    label = np.ones((400, 600), dtype=np.uint8)
+    label = cv2.remap(label, x_map, y_map, cv2.INTER_NEAREST)
+    label = label[:, 55:-55]
+    label = cv2.resize(label, (512, 512))
+    # cv2.imshow('label', label * 255)
+    # cv2.waitKey(0)
+    label = torchvision.transforms.ToTensor()(label)
+    label = label.unsqueeze(0)
+
+    return label
+
+
+def merge_label(label):
+    background_label = init_noisy_background().to(label.device)
+    label = label[:, :1]
+    background = torch.logical_and(label, background_label)
+    return background.float()
 
 
 def get_data_t(data, net_G_output, data_prev, t):
@@ -56,7 +83,7 @@ class L1_Charbonnier_loss(nn.Module):
         diff = torch.add(X, -Y)
         numel = torch.numel(diff)
         numel = numel * numel
-        error = torch.sqrt(diff * diff/numel + self.eps)
+        error = torch.sqrt(diff * diff / numel + self.eps)
         loss = torch.sum(error)
         return loss
 
@@ -67,10 +94,12 @@ class LossFunc:
         self.l1 = torch.nn.MSELoss()
         self.l1_charbonnier = L1_Charbonnier_loss()
 
-    def get_loss(self, outputs, targets):
-        loss = self.l1(outputs, targets)
-        loss += self.l1_charbonnier(outputs, targets)
+    def get_loss(self, outputs, targets, weights):
+        # loss = self.l1(outputs, targets)
+        # loss += self.l1_charbonnier(outputs, targets)
         # loss += self.perceptual(outputs, targets)
+        # mean squared error with weights
+        loss = torch.mean(torch.sum(torch.pow(outputs - targets, 2) * weights, 1))
         return loss
 
 
@@ -79,6 +108,7 @@ if __name__ == '__main__':
 
     train_data_loader, val_data_loader = get_train_and_val_dataloader(cfg, 0)
     net_G, net_D, opt_G, opt_D, sch_G, sch_D = get_model_optimizer_and_scheduler(cfg, seed=0)
+    net_G.load_state_dict(torch.load('C:/Users/admin/Downloads/epoch_00137_iteration_000008980_checkpoint.pt')["net_G"])
     # net_G = UNet(4, 3).cuda()
     # opt_G = torch.optim.Adam(net_G.parameters(), lr=cfg.gen_opt.lr)
     # data_sample = next(iter(train_data_loader))
@@ -88,6 +118,7 @@ if __name__ == '__main__':
     data_sample['label'] = data_sample['label'].cuda()
     sequence_length = data_sample['images'].shape[1]
     loss_func = LossFunc()
+    i = 0
     while True:
         output = []
         losses = []
@@ -103,15 +134,18 @@ if __name__ == '__main__':
             data_t['prev_labels'] = data_sample["label"][:, t - 1:t] if t > 0 else None
             data_t['prev_images'] = out_prev
             net_G_output = net_G(data_t)
+            background_label = merge_label(data_t['label'])
             out_prev = net_G_output['fake_images'][None, ...].detach()
-            loss = loss_func.get_loss(net_G_output['fake_images'], data_t['image'])
-            # loss += loss_func.get_loss(net_G_output['fake_image'], data_t['image'])
-            # backward and optimize
-            opt_G.zero_grad()
-            loss.backward()
-            opt_G.step()
+            # loss = loss_func.get_loss(net_G_output['fake_images'], data_t['image'])
             output.append(net_G_output['fake_images'].detach())
-            losses.append(loss.detach())
+            if t > 0 :
+                loss = loss_func.get_loss(net_G_output['fake_images'], data_t['prev_images'], background_label)
+                # backward and optimize
+                opt_G.zero_grad()
+                loss.backward()
+                opt_G.step()
+                losses.append(loss.detach())
+        i += 1
         print("Loss: {}".format(torch.mean(torch.stack(losses))))
         output = torch.cat(output, dim=0)
         video = tensor2im(data_sample["images"])[0]

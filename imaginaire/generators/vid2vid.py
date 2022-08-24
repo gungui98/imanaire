@@ -189,7 +189,8 @@ class Generator(BaseNetwork):
             image = image.unsqueeze(0)
             noisy_images.append(image)
 
-        label = np.ones((512, 512), dtype=np.uint8)
+        # TODO: fix label mapping
+        label = np.ones((400, 600), dtype=np.uint8)
         label = cv2.remap(label, x_map, y_map, cv2.INTER_NEAREST)
         label = label[:, 55:-55]
         label = cv2.resize(label, (512, 512))

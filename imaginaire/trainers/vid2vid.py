@@ -267,7 +267,7 @@ class Trainer(BaseTrainer):
             if 'fake_images_source' not in net_G_output:
                 net_G_output['fake_images_source'] = 'in_training'
             if net_G_output['fake_images_source'] != 'pretrained':
-                net_D_output, _ = self.net_D(data_t, detach(net_G_output), past_frames)
+                net_D_output, _ = self.net_D(data_t, detach(net_G_output), past_frames, data_prev)
                 self.get_dis_losses(net_D_output)
 
             # Generator update.
@@ -281,7 +281,7 @@ class Trainer(BaseTrainer):
             if net_G_output['fake_images_source'] != 'pretrained':
                 net_D_output, past_frames = \
                     self.net_D(data_t, net_G_output, past_frames)
-                self.get_gen_losses(data_t, net_G_output, net_D_output)
+                self.get_gen_losses(data_t, net_G_output, net_D_output, data_prev)
 
             # update average
             if self.cfg.trainer.model_average_config.enabled:
@@ -466,7 +466,7 @@ class Trainer(BaseTrainer):
 
         return first_net_G_output, net_G_output, all_info
 
-    def get_gen_losses(self, data_t, net_G_output, net_D_output):
+    def get_gen_losses(self, data_t, net_G_output, net_D_output, data_prev = None):
         r"""Compute generator losses.
 
         Args:
@@ -491,10 +491,23 @@ class Trainer(BaseTrainer):
                     self.gen_losses['L1'] = self.criteria['L1'](
                         net_G_output['fake_images'], data_t['image'])
 
+                # mse loss.
+                if getattr(self.cfg.trainer.loss_weight, 'MSE', 0) > 0:
+                    self.gen_losses['MSE'] = self.criteria['MSE'](
+                        net_G_output['fake_images'], data_t['image'])
+                if data_prev is not None:
+                    diff_real_image = torch.abs(data_t['image'] - data_prev["image"])
+
+                    diff_fake_image = torch.abs(net_G_output['fake_images'] - data_prev["image"])
+
+                    if getattr(self.cfg.trainer.loss_weight, 'L1', 0) > 0:
+                        self.gen_losses['L1_diff'] = self.criteria['L1'](
+                            diff_real_image, diff_fake_image)
+
                     # mse loss.
                     if getattr(self.cfg.trainer.loss_weight, 'MSE', 0) > 0:
-                        self.gen_losses['MSE'] = self.criteria['MSE'](
-                            net_G_output['fake_images'], data_t['image'])
+                        self.gen_losses['MSE_diff'] = self.criteria['MSE'](
+                            diff_real_image, diff_fake_image)
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
                 if 'raw' in net_D_output:
@@ -594,6 +607,11 @@ class Trainer(BaseTrainer):
                 self.dis_losses['GAN'] = self.compute_gan_losses(
                     net_D_output['indv'], dis_update=True
                 )
+
+                if 'diff' in net_D_output:
+                    diff_loss = self.compute_gan_losses(net_D_output['diff'],
+                                                       dis_update=True)
+                    self.dis_losses['GAN'] += diff_loss
 
                 # Raw (hallucinated) output image GAN loss.
                 if 'raw' in net_D_output:
