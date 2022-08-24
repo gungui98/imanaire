@@ -251,9 +251,10 @@ class Trainer(BaseTrainer):
         past_frames = [None, None]
         net_G_output = None
         data_prev = None
+        net_G_output_prev = None
         for t in range(self.sequence_length):
             data_t = self.get_data_t(data, net_G_output, data_prev, t)
-            data_prev = data_t
+
 
             # Discriminator update.
             if reuse_gen_output:
@@ -267,7 +268,7 @@ class Trainer(BaseTrainer):
             if 'fake_images_source' not in net_G_output:
                 net_G_output['fake_images_source'] = 'in_training'
             if net_G_output['fake_images_source'] != 'pretrained':
-                net_D_output, _ = self.net_D(data_t, detach(net_G_output), past_frames, data_prev)
+                net_D_output, _ = self.net_D(data_t, detach(net_G_output), past_frames, data_prev, net_G_output_prev)
                 self.get_dis_losses(net_D_output)
 
             # Generator update.
@@ -286,6 +287,9 @@ class Trainer(BaseTrainer):
             # update average
             if self.cfg.trainer.model_average_config.enabled:
                 self.net_G.module.update_average()
+
+            data_prev = data_t
+            net_G_output_prev = detach(net_G_output)
 
     def dis_update(self, data):
         r"""The update is already done in gen_update.
@@ -501,12 +505,12 @@ class Trainer(BaseTrainer):
                     diff_fake_image = torch.abs(net_G_output['fake_images'] - data_prev["image"])
 
                     if getattr(self.cfg.trainer.loss_weight, 'L1', 0) > 0:
-                        self.gen_losses['L1_diff'] = self.criteria['L1'](
+                        self.gen_losses['L1'] += self.criteria['L1'](
                             diff_real_image, diff_fake_image)
 
                     # mse loss.
                     if getattr(self.cfg.trainer.loss_weight, 'MSE', 0) > 0:
-                        self.gen_losses['MSE_diff'] = self.criteria['MSE'](
+                        self.gen_losses['MSE'] += self.criteria['MSE'](
                             diff_real_image, diff_fake_image)
 
                 # Raw (hallucinated) output image losses (GAN and perceptual).
