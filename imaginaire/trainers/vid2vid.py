@@ -282,7 +282,7 @@ class Trainer(BaseTrainer):
             if net_G_output['fake_images_source'] != 'pretrained':
                 net_D_output, past_frames = \
                     self.net_D(data_t, net_G_output, past_frames)
-                self.get_gen_losses(data_t, net_G_output, net_D_output, data_prev)
+                self.get_gen_losses(data_t, net_G_output, net_D_output, data_prev, net_G_output_prev)
 
             # update average
             if self.cfg.trainer.model_average_config.enabled:
@@ -470,7 +470,7 @@ class Trainer(BaseTrainer):
 
         return first_net_G_output, net_G_output, all_info
 
-    def get_gen_losses(self, data_t, net_G_output, net_D_output, data_prev = None):
+    def get_gen_losses(self, data_t, net_G_output, net_D_output, data_prev = None, net_G_output_prev=None):
         r"""Compute generator losses.
 
         Args:
@@ -502,7 +502,7 @@ class Trainer(BaseTrainer):
                 if data_prev is not None:
                     diff_real_image = torch.abs(data_t['image'] - data_prev["image"])
 
-                    diff_fake_image = torch.abs(net_G_output['fake_images'] - data_prev["image"])
+                    diff_fake_image = torch.abs(net_G_output['fake_images'] - net_G_output_prev["fake_images"])
 
                     if getattr(self.cfg.trainer.loss_weight, 'L1', 0) > 0:
                         self.gen_losses['L1'] += self.criteria['L1'](
