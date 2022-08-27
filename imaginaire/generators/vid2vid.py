@@ -177,6 +177,16 @@ class Generator(BaseNetwork):
             image = torchvision.transforms.ToTensor()(image)
             image = image.unsqueeze(0)
             noisy_images.append(image)
+        label_noise = np.ones((400, 600), dtype=np.uint8)
+        label_noise = cv2.remap(label_noise, x_map, y_map, cv2.INTER_LINEAR)
+        label_noise = label_noise[:, 55:-55]
+        label_noise = cv2.resize(label_noise, (512, 512), cv2.INTER_NEAREST)
+        label_noise = label_noise.astype(np.float32)
+        # cv2.imshow("label", np.uint8(255 * label_noise))
+        # cv2.waitKey(0)
+        label_noise = np.concatenate([label_noise[None, ...] for _ in range(4)])
+        label_noise[0] = 1 - label_noise[0]
+        self.label_noise = torch.from_numpy(label_noise)
         self.noisy_backgrounds = noisy_images
 
     def get_noisy_background(self, batch_size):
@@ -188,6 +198,16 @@ class Generator(BaseNetwork):
         for i in range(batch_size):
             noisy_backgrounds.append(random.choice(self.noisy_backgrounds))
         return torch.cat(noisy_backgrounds, dim=0)
+
+    def get_noisy_label(self, batch_size):
+        r"""
+        Get the noisy background.
+        """
+
+        noisy_labels = []
+        for i in range(batch_size):
+            noisy_labels.append(self.label_noise)
+        return torch.cat(noisy_labels, dim=0)
 
     def forward(self, data):
         r"""vid2vid generator forward.
@@ -202,6 +222,7 @@ class Generator(BaseNetwork):
 
         label_prev, img_prev = data['prev_labels'], data['prev_images']
         noisy_background = self.get_noisy_background(bs)
+        noisy_label = self.get_noisy_label(bs)
 
         is_first_frame = img_prev is None
         if not is_first_frame:
@@ -209,6 +230,7 @@ class Generator(BaseNetwork):
             noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
             noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
             img_prev = noisy_backgrounds.to(label.device)
+            label_prev = torch.cat([noisy_label.view(bs, 1, 4, h, w).to(label.device) for _ in range(n_image)], dim=1)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
@@ -312,7 +334,7 @@ class Generator(BaseNetwork):
 
         if warp_prev and not self.spade_combine:
             img_raw = img_final
-            img_final = img_final * (1-mask) + img_warp * mask
+            img_final = img_final * (1 - mask) + img_warp * mask
             weight_map = mask
         else:
             weight_map = torch.ones_like(img_final)

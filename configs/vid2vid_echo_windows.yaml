@@ -170,3 +170,48 @@ data:
         augmentations:
             resize_h_w: 512, 512
             horizontal_flip: False
+
+
+test_data:
+    # Name of this dataset.
+    name: 'cityscapes'
+    # Which dataloader to use?
+    type: imaginaire.datasets.paired_videos
+    num_frames_G: 3
+    num_frames_D: 3
+
+    # How many data loading workers per GPU?
+    num_workers: 4
+    input_types:
+        - images:
+            ext: jpg
+            num_channels: 3
+            normalize: True
+        - seg_maps:
+            ext: png
+            num_channels: 1
+            is_mask: True
+            normalize: False
+
+    full_data_ops: imaginaire.model_utils.label::make_one_hot, imaginaire.model_utils.label::concat_labels
+    use_dont_care: False
+    one_hot_num_classes:
+        seg_maps: 4
+    input_labels:
+        - seg_maps
+
+    input_image:
+        - images
+
+    # Train dataset details.
+    test:
+        # Input LMDBs.
+        roots:
+            - E:/echo_gen_data/camus_cityscape_format/test
+        # Batch size per GPU.
+        batch_size: 1
+        initial_sequence_length: 10
+        # Data augmentations to be performed in given order.
+        augmentations:
+            resize_h_w: 512, 512
+            horizontal_flip: False

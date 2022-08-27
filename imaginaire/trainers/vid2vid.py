@@ -365,7 +365,7 @@ class Trainer(BaseTrainer):
                 video.append(output)
 
             # Save output as mp4.
-            imageio.mimsave(video_path + '.mp4', video, fps=15)
+            imageio.mimsave(video_path + '.mp4', video[3:], fps=15)
 
     def test_single(self, data, output_dir=None, inference_args=None):
         r"""The inference function. If output_dir exists, also save the
@@ -423,6 +423,7 @@ class Trainer(BaseTrainer):
             self.visualize_label(data['label'][:, -1]),
             tensor2im(data['images'][:, -1]),
             tensor2im(self.net_G_output['fake_images']),
+            tensor2flow(self.net_G_output['fake_flow_maps'])
         ]
         return vis_images
 
