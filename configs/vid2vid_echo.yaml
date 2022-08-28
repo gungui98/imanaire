@@ -75,7 +75,7 @@ gen:
         kernel_size: 1
     weight_norm_type: spectral
     style_dims: 256
-        use_segmap_as_input: True
+    use_segmap_as_input: True
     flow:
         generate_raw_output: False
         num_filters: 32
