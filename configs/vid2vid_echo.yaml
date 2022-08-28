@@ -65,11 +65,9 @@ dis_opt:
 # Model options.
 gen:
     type: imaginaire.generators.vid2vid
-    num_layers: 7
-    num_downsamples_img: 4
-    num_filters: 8
-    max_num_filters: 128
-    kernel_size: 3
+    num_filters: 32
+    max_num_filters: 1024
+    num_downsamples: 5
     activation_norm_type: spatially_adaptive
     activation_norm_params:
         activation_norm_type: instance
@@ -77,29 +75,28 @@ gen:
         kernel_size: 1
     weight_norm_type: spectral
     style_dims: 256
-    use_segmap_as_input: True
+        use_segmap_as_input: True
     flow:
-        num_filters: 8
-        max_num_filters: 128
-        num_downsamples: 5
+        generate_raw_output: False
+        num_filters: 32
+        max_num_filters: 1024
+        num_downsamples: 3
         num_res_blocks: 6
         activation_norm_type: instance
         weight_norm_type: spectral
-        flow_output_multiplier: 40
-        generate_raw_output: False
+        flow_output_multiplier: 20
         multi_spade_combine:
             num_layers: 3
             embed:
                 arch: unet
-                num_filters: 8
+                num_filters: 32
                 num_downsamples: 5
                 kernel_size: 3
                 weight_norm_type: spectral
     embed:
         use_embed: True
         arch: encoderdecoder
-        num_filters: 8
-        max_num_filters: 128
+        num_filters: 32
         num_downsamples: 5
         kernel_size: 3
         weight_norm_type: spectral
@@ -107,11 +104,11 @@ gen:
 dis:
     type: imaginaire.discriminators.fs_vid2vid
     image:
-        num_filters: 8
-        max_num_filters: 128
+        num_filters: 32
+        max_num_filters: 512
         num_discriminators: 2
-        num_layers: 3
-        weight_norm_type: none
+        num_layers: 4
+        weight_norm_type: spectral
         activation_norm_type: instance
 flow_network:
     type: imaginaire.third_party.flow_net.flow_net

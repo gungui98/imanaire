@@ -230,7 +230,7 @@ class Generator(BaseNetwork):
             noisy_backgrounds = [self.get_noisy_background(bs).view(bs, 1, 3, h, w) for _ in range(n_image)]
             noisy_backgrounds = torch.cat(noisy_backgrounds, dim=1)
             img_prev = noisy_backgrounds.to(label.device)
-            label_prev = torch.cat([noisy_label.view(bs, 1, 4, h, w).to(label.device) for _ in range(n_image)], dim=1)
+            # label_prev = torch.cat([noisy_label.view(bs, 1, 4, h, w).to(label.device) for _ in range(n_image)], dim=1)
 
         # Get SPADE conditional maps by embedding current label input.
         cond_maps_now = self.get_cond_maps(label, self.label_embedding)
