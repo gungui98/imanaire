@@ -3,7 +3,7 @@ logging_iter: 200
 # Number of training epochs.
 max_iter: 120000
 # Number of epochs training single frame generator.
-single_frame_epoch: 0
+single_frame_epoch: 50
 # How often to double the number of training frames in each clip.
 num_epochs_temporal_step: 40
 
@@ -65,9 +65,11 @@ dis_opt:
 # Model options.
 gen:
     type: imaginaire.generators.vid2vid
-    num_filters: 32
-    max_num_filters: 1024
-    num_downsamples: 5
+    num_layers: 7
+    num_downsamples_img: 4
+    num_filters: 8
+    max_num_filters: 128
+    kernel_size: 3
     activation_norm_type: spatially_adaptive
     activation_norm_params:
         activation_norm_type: instance
@@ -77,26 +79,27 @@ gen:
     style_dims: 256
     use_segmap_as_input: True
     flow:
-        generate_raw_output: False
-        num_filters: 32
-        max_num_filters: 1024
-        num_downsamples: 3
+        num_filters: 8
+        max_num_filters: 128
+        num_downsamples: 5
         num_res_blocks: 6
         activation_norm_type: instance
         weight_norm_type: spectral
-        flow_output_multiplier: 20
+        flow_output_multiplier: 40
+        generate_raw_output: False
         multi_spade_combine:
             num_layers: 3
             embed:
                 arch: unet
-                num_filters: 32
+                num_filters: 8
                 num_downsamples: 5
                 kernel_size: 3
                 weight_norm_type: spectral
     embed:
         use_embed: True
         arch: encoderdecoder
-        num_filters: 32
+        num_filters: 8
+        max_num_filters: 128
         num_downsamples: 5
         kernel_size: 3
         weight_norm_type: spectral
@@ -104,11 +107,11 @@ gen:
 dis:
     type: imaginaire.discriminators.fs_vid2vid
     image:
-        num_filters: 32
-        max_num_filters: 512
+        num_filters: 8
+        max_num_filters: 128
         num_discriminators: 2
-        num_layers: 4
-        weight_norm_type: spectral
+        num_layers: 3
+        weight_norm_type: none
         activation_norm_type: instance
 flow_network:
     type: imaginaire.third_party.flow_net.flow_net
